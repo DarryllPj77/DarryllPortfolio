@@ -44,6 +44,10 @@ class MockIntersectionObserver {
 }
 window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
+// jsdom has no canvas/WebGL. Report "no context", like a device without WebGL,
+// so the avatar uses its fallback (and jsdom doesn't log "not implemented").
+HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
+
 beforeEach(() => {
   window.innerWidth = 1280;
   window.localStorage.clear();

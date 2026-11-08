@@ -1,3 +1,14 @@
+/*
+ * The avatar sits directly on the page: no card, border or panel. A thin
+ * ground line (part of the construction-grid language) crops the figure at
+ * the waist, so it reads as rising from the layout rather than boxed in.
+ */
+.avatar {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+}
+
 .slot {
   position: relative;
   width: 100%;
@@ -5,113 +16,140 @@
   max-height: 520px;
 }
 
-.placeholder {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-panel);
-  background-image:
-    linear-gradient(var(--color-border-subtle) 1px, transparent 1px),
-    linear-gradient(90deg, var(--color-border-subtle) 1px, transparent 1px);
-  background-size: 28px 28px;
-  background-position: center;
-}
-
-/* Soften the grid toward the edges so it reads as depth, not decoration. */
-.placeholder::before {
-  content: '';
+.poster,
+.scene {
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    ellipse at 50% 45%,
-    transparent 0%,
-    rgb(22 32 51 / 0.6) 55%,
-    var(--color-panel) 85%
-  );
+  transition: opacity var(--dur) var(--ease-out);
 }
 
-.figure {
-  position: relative;
-  width: 62%;
-  max-width: 260px;
-  margin-top: 8%;
+/*
+ * The scene fades in over the poster once its first frame has rendered.
+ * Its canvas extends left of the slot by --bleed (set from the framing) so the
+ * waving hand has room; the camera keeps the figure centred in the slot.
+ */
+.scene {
+  left: calc(var(--bleed, 0) * -100%);
+  opacity: 0;
 }
 
-.outline {
+.slot[data-scene-ready] .scene {
+  opacity: 1;
+}
+
+.slot[data-scene-ready] .poster {
+  opacity: 0;
+}
+
+.posterImage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.silhouette {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.silhouette svg {
+  display: block;
+  width: 78%;
+  max-height: 100%;
+  fill: var(--color-panel);
   stroke: var(--color-border);
-  stroke-width: 1.5;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
 }
 
-.ring {
-  fill: none;
-  stroke: var(--color-accent-line);
-  stroke-width: 1.5;
-  stroke-dasharray: 4 6;
-}
-
-.corner {
+/* Ground line: full width, fading out at both ends. */
+.ground {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  border-color: var(--color-accent-line);
-  border-style: solid;
-  border-width: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-border) 18%,
+    var(--color-border) 82%,
+    transparent
+  );
+  pointer-events: none;
 }
 
-.corner[data-pos='tl'] {
-  top: 12px;
-  left: 12px;
-  border-top-width: 1.5px;
-  border-left-width: 1.5px;
+
+/* The scene draws only; the slot itself receives pointer input. */
+.scene {
+  pointer-events: none;
 }
 
-.corner[data-pos='tr'] {
-  top: 12px;
-  right: 12px;
-  border-top-width: 1.5px;
-  border-right-width: 1.5px;
+/* Interactive once the 3D avatar is showing: drag sideways to turn, tap to wave.
+   Vertical swipes still scroll the page on touch screens. */
+.slot[data-scene-ready] {
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.corner[data-pos='bl'] {
-  bottom: 12px;
-  left: 12px;
-  border-bottom-width: 1.5px;
-  border-left-width: 1.5px;
+.slot[data-state='dragging'] {
+  cursor: grabbing;
 }
 
-.corner[data-pos='br'] {
-  bottom: 12px;
-  right: 12px;
-  border-bottom-width: 1.5px;
-  border-right-width: 1.5px;
-}
-
-.caption {
-  position: absolute;
-  top: 36px;
-  left: 50%;
-  display: inline-flex;
+/* One row under the avatar; the same height while loading and when ready, so nothing shifts. */
+.controls,
+.status {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px var(--space-2);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 999px;
-  background: var(--color-shell);
+  justify-content: center;
+  gap: var(--space-3);
+  min-height: 44px;
   font-family: var(--font-mono);
-  font-size: var(--fs-2xs);
+  font-size: var(--fs-xs);
   color: var(--color-text-muted);
-  white-space: nowrap;
-  transform: translateX(-50%);
 }
 
-.captionDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-warning);
+.wave {
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.wave:hover {
+  border-color: var(--color-accent-line);
+  color: var(--color-accent);
+}
+
+.wave[aria-disabled='true'] {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+/* Stacked layout (tablets and phones): a square slot with the closer framing. */
+@media (max-width: 900px) {
+  .slot {
+    aspect-ratio: 1 / 1;
+  }
+}
+
+/* "Drag to turn" only makes sense with room to drag; keep it off the smallest screens. */
+@media (max-width: 360px) {
+  .hint {
+    display: none;
+  }
 }

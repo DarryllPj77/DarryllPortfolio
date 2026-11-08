@@ -21,7 +21,11 @@ npm test         # vitest
 - `src/components/shell/`: the workspace shell (top nav, Explorer, mobile menu, status bar).
 - `src/motion/`: motion tokens (durations, easing), shared variants and `Reveal`/`MaskedText`.
 - `src/intro/`: the "Building darryll.dev" intro (once per session, Home only, skippable).
-- `src/components/3d/`: avatar slot, placeholder, `AvatarScene` and `AvatarModel` stubs, and the planned per-section reactions. Switch `avatarConfig.mode` to `'scene'` once the model exists.
+- `src/components/3d/`: the Home hero avatar (`public/models/darryll-avatar.glb`).
+  - `AvatarSlot` shows `AvatarFallback` first and layers the lazy-loaded `AvatarScene` (React Three Fiber) on top for capable devices (WebGL2, no data saver, more than 2 GB memory), once the hero is in view and the intro has finished. Any failure leaves the fallback.
+  - `AvatarModel` plays the GLB's own `Idle` / `Wave` / `Neutral` clips and layers head tracking and drag rotation on top in one frame loop.
+  - `avatarInteraction.ts` holds the interaction states (`dragging` > `waving` > `pointerTracking` > `idle`); `useAvatarInteraction.ts` handles pointer, drag and click input.
+  - `avatar.config.ts`: model path, clip and joint names, camera framing per layout.
 - Optional case-study fields (`problem`, `features`, `hero`, `chapters`) in `src/data/projects.ts` appear on project pages once filled in. Academic Sentinel's screenshots, captions and grouping are in `src/data/academicSentinelScreenshots.ts`; the files themselves are in `public/image/projects/academic-sentinel/`.
 - `src/views/`: one component per page.
 - `src/styles/tokens.css`: colours, fonts, spacing.

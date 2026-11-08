@@ -104,10 +104,18 @@
   box-shadow: 0 0 0 3px var(--color-success-soft);
 }
 
+/* The avatar stands on the hero's baseline rather than floating mid-height. */
 .avatar {
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   justify-self: end;
+  align-self: end;
+}
+
+@media (max-width: 1100px) {
+  .avatar {
+    max-width: 340px;
+  }
 }
 
 .sectionHead {
@@ -137,12 +145,16 @@
   }
 
   .avatar {
-    max-width: 340px;
-    justify-self: start;
+    max-width: 360px;
+    justify-self: center;
   }
 }
 
 @media (max-width: 480px) {
+  .avatar {
+    max-width: 260px;
+  }
+
   .actions > * {
     flex: 1 1 auto;
   }
