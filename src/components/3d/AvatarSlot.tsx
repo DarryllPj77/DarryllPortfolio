@@ -1,5 +1,7 @@
 import { useReducedMotion } from 'motion/react';
 import { lazy, Suspense } from 'react';
+import { useLocation } from 'react-router';
+import { getViewMeta } from '../../data/navigation';
 import { useActiveSection } from '../../hooks/useActiveSection';
 import { avatarConfig } from './avatar.types';
 import styles from './Avatar.module.css';
@@ -14,9 +16,12 @@ const AvatarScene = lazy(() => import('./AvatarScene'));
  */
 export function AvatarSlot() {
   const activeSection = useActiveSection();
+  const { pathname } = useLocation();
+  const selectedProject = getViewMeta(pathname).projectSlug;
   const reducedMotion = useReducedMotion() ?? false;
   const props = {
     activeSection,
+    selectedProject,
     reducedMotion,
     label: 'Placeholder for an interactive 3D avatar of Darryll',
   };

@@ -1,19 +1,24 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useLocation } from 'react-router';
 import { normalizePath } from '../../data/navigation';
+import { page } from '../../motion/variants';
 import { AppRoutes } from '../../routes';
 
-/** Renders the current view with a short fade between views. */
-export function Workspace() {
+/**
+ * Renders the current view. On navigation the old view fades out quickly,
+ * then the new one enters with its content staggered (see motion/variants).
+ * `paused` holds the entrance while the intro is showing.
+ */
+export function Workspace({ paused }: { paused: boolean }) {
   const location = useLocation();
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="wait">
       <motion.div
         key={normalizePath(location.pathname)}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.16, ease: [0.2, 0.8, 0.2, 1] }}
+        variants={page}
+        initial="hidden"
+        animate={paused ? 'hidden' : 'show'}
+        exit="exit"
       >
         <AppRoutes location={location} />
       </motion.div>

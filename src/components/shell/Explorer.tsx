@@ -1,106 +1,138 @@
-import { useState, type CSSProperties, type KeyboardEvent } from 'react';
-import { NavLink } from 'react-router';
-import { navTree, normalizePath, type NavItem } from '../../data/navigation';
+import { useState, type KeyboardEvent } from 'react';
+import { Link, useLocation } from 'react-router';
+import {
+  explorerTree,
+  normalizePath,
+  type ExplorerFile,
+  type ExplorerFolder,
+} from '../../data/navigation';
 import { Icon } from '../ui/Icon';
 import styles from './Explorer.module.css';
 
 interface ExplorerProps {
-  pathname: string;
-  /** Called after a link is chosen (used to close overlay/drawer layouts). */
+  /** Called after a file is chosen (used to close the tablet overlay). */
   onNavigate?: () => void;
 }
 
-/** Arrow keys move between links, like a file tree. Tab still works as normal. */
+/** Arrow keys move between rows, like a file tree. Tab still works as normal. */
 function handleTreeKeys(event: KeyboardEvent<HTMLElement>) {
-  const keys = ['ArrowDown', 'ArrowUp', 'Home', 'End'];
-  if (!keys.includes(event.key)) return;
-  const links = Array.from(event.currentTarget.querySelectorAll<HTMLAnchorElement>('a[href]'));
-  const index = links.indexOf(document.activeElement as HTMLAnchorElement);
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+  const rows = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>('a[href], button'),
+  );
+  const index = rows.indexOf(document.activeElement as HTMLElement);
   if (index === -1 && event.key !== 'Home' && event.key !== 'End') return;
   event.preventDefault();
-  let next = index;
-  if (event.key === 'ArrowDown') next = Math.min(links.length - 1, index + 1);
-  if (event.key === 'ArrowUp') next = Math.max(0, index - 1);
-  if (event.key === 'Home') next = 0;
-  if (event.key === 'End') next = links.length - 1;
-  links[next]?.focus();
+  const last = rows.length - 1;
+  const next = {
+    ArrowDown: Math.min(last, index + 1),
+    ArrowUp: Math.max(0, index - 1),
+    Home: 0,
+    End: last,
+  }[event.key as 'ArrowDown' | 'ArrowUp' | 'Home' | 'End'];
+  rows[next]?.focus();
 }
 
-export function Explorer({ pathname, onNavigate }: ExplorerProps) {
+function useIsActive() {
+  const { pathname, hash } = useLocation();
   const current = normalizePath(pathname);
+  return (file: ExplorerFile) =>
+    file.path === current && (file.hash ? file.hash === hash : true);
+}
+
+/** The workspace file tree: the developer-flavoured way to browse the portfolio. */
+export function Explorer({ onNavigate }: ExplorerProps) {
+  const isActive = useIsActive();
   return (
     <div className={styles.explorer}>
       <p className={styles.heading}>Explorer</p>
-      <nav aria-label="Portfolio sections" onKeyDown={handleTreeKeys}>
+      <nav aria-label="Workspace files" onKeyDown={handleTreeKeys}>
         <p className={styles.root}>
           <Icon name="chevron-down" size={14} />
-          Portfolio
+          portfolio
         </p>
         <ul role="list" className={styles.list}>
-          {navTree.map((item) => (
-            <ExplorerItem key={item.id} item={item} current={current} onNavigate={onNavigate} />
-          ))}
+          {explorerTree.map((node) =>
+            node.kind === 'folder' ? (
+              <FolderRow key={node.id} folder={node} isActive={isActive} onNavigate={onNavigate} />
+            ) : (
+              <li key={node.id}>
+                <FileRow file={node} depth={0} active={isActive(node)} onNavigate={onNavigate} />
+              </li>
+            ),
+          )}
         </ul>
       </nav>
     </div>
   );
 }
 
-interface ExplorerItemProps {
-  item: NavItem;
-  current: string;
-  depth?: number;
+function FolderRow({
+  folder,
+  isActive,
+  onNavigate,
+}: {
+  folder: ExplorerFolder;
+  isActive: (file: ExplorerFile) => boolean;
   onNavigate?: () => void;
-}
-
-function ExplorerItem({ item, current, depth = 0, onNavigate }: ExplorerItemProps) {
-  const hasChildren = Boolean(item.children?.length);
-  const containsCurrent = hasChildren && current.startsWith(`${item.path}/`);
-  const [expanded, setExpanded] = useState(true);
-  const isOpen = expanded || containsCurrent;
-  const groupId = `explorer-group-${item.id}`;
-  const icon = hasChildren ? (isOpen ? 'folder-open' : 'folder') : item.icon;
-
+}) {
+  const [open, setOpen] = useState(true);
+  const containsActive = folder.children.some(isActive);
+  const groupId = `explorer-${folder.id}`;
   return (
     <li>
-      <div
-        className={styles.row}
-        style={{ '--depth': depth } as CSSProperties}
-        data-contains-current={containsCurrent || undefined}
+      <button
+        type="button"
+        className={styles.folder}
+        aria-expanded={open}
+        aria-controls={groupId}
+        onClick={() => setOpen(!open)}
+        data-contains-current={containsActive || undefined}
       >
-        {hasChildren ? (
-          <button
-            type="button"
-            className={styles.toggle}
-            aria-expanded={isOpen}
-            aria-controls={groupId}
-            aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${item.label}`}
-            onClick={() => setExpanded(!isOpen)}
-            disabled={containsCurrent}
-          >
-            <Icon name={isOpen ? 'chevron-down' : 'chevron-right'} size={14} />
-          </button>
-        ) : (
-          <span className={styles.spacer} aria-hidden="true" />
-        )}
-        <NavLink to={item.path} end className={styles.link} onClick={onNavigate}>
-          <Icon name={icon} size={16} className={styles.icon} />
-          <span className={styles.label}>{item.label}</span>
-        </NavLink>
-      </div>
-      {hasChildren && isOpen ? (
+        <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} className={styles.chevron} />
+        <Icon name={open ? 'folder-open' : 'folder'} size={16} className={styles.folderIcon} />
+        <span className={styles.label}>
+          {folder.name}
+          <span className={styles.slash}>/</span>
+        </span>
+      </button>
+      {open ? (
         <ul role="list" id={groupId} className={styles.list}>
-          {item.children!.map((child) => (
-            <ExplorerItem
-              key={child.id}
-              item={child}
-              current={current}
-              depth={depth + 1}
-              onNavigate={onNavigate}
-            />
+          {folder.children.map((file) => (
+            <li key={file.id}>
+              <FileRow file={file} depth={1} active={isActive(file)} onNavigate={onNavigate} />
+            </li>
           ))}
         </ul>
       ) : null}
     </li>
+  );
+}
+
+function FileRow({
+  file,
+  depth,
+  active,
+  onNavigate,
+}: {
+  file: ExplorerFile;
+  depth: number;
+  active: boolean;
+  onNavigate?: () => void;
+}) {
+  return (
+    <Link
+      to={{ pathname: file.path, hash: file.hash ?? '' }}
+      className={styles.file}
+      data-depth={depth}
+      data-tone={file.tone}
+      aria-current={active ? 'page' : undefined}
+      title={file.title}
+      onClick={onNavigate}
+    >
+      <Icon name={file.icon} size={16} className={styles.fileIcon} />
+      <span className={styles.label}>{file.name}</span>
+      <span className="visually-hidden">: {file.title}</span>
+    </Link>
   );
 }

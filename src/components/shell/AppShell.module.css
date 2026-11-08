@@ -1,11 +1,9 @@
 .shell {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  /* Never let intrinsic widths (e.g. the top bar) widen the page. */
-  grid-template-columns: minmax(0, 1fr);
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
+  --side-h: calc(100dvh - var(--topbar-h) - var(--statusbar-h));
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .shell[data-dragging] {
@@ -16,7 +14,19 @@
 .body {
   position: relative;
   display: flex;
-  min-height: 0;
+  flex: 1;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* Rail + Explorer column: pinned while the page scrolls. */
+.side {
+  position: sticky;
+  top: var(--topbar-h);
+  z-index: 30;
+  display: flex;
+  height: var(--side-h);
+  flex-shrink: 0;
 }
 
 .sidebar {
@@ -31,30 +41,29 @@
   height: 100%;
 }
 
-.workspace {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
-}
-
 .main {
   flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-padding-top: var(--space-4);
+  min-width: 0;
 }
 
 .main:focus {
   outline: none;
 }
 
+/* Status bar stays pinned at the bottom of the viewport. */
+.shell > footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+}
+
 .scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
+  position: fixed;
+  top: var(--topbar-h);
+  bottom: var(--statusbar-h);
+  left: var(--rail-w);
+  right: 0;
+  z-index: 25;
   background: rgb(15 23 42 / 0.65);
 }
 
@@ -62,42 +71,12 @@
 .shell[data-layout='tablet'] .sidebar {
   position: absolute;
   top: 0;
-  bottom: 0;
   left: var(--rail-w);
-  z-index: 30;
   width: min(300px, 70vw);
   box-shadow: var(--shadow-overlay);
 }
 
-.shell[data-layout='tablet'] .scrim {
-  left: var(--rail-w);
-}
-
-/* Mobile: normal document scrolling, Explorer becomes a drawer. */
-.shell[data-layout='mobile'] {
-  height: auto;
-  min-height: 100vh;
-  min-height: 100dvh;
-  overflow: visible;
-}
-
-.shell[data-layout='mobile'] .main {
-  overflow: visible;
-}
-
-.shell[data-layout='mobile'] .sidebar {
-  position: fixed;
-  top: var(--topbar-h);
-  bottom: 0;
-  left: 0;
-  z-index: 45;
-  width: min(320px, 86vw);
-  height: auto;
-  box-shadow: var(--shadow-overlay);
-}
-
-.shell[data-layout='mobile'] .scrim {
-  position: fixed;
-  top: var(--topbar-h);
-  z-index: 40;
+/* Mobile: the status bar is just the end of the page. */
+.shell[data-layout='mobile'] > footer {
+  position: static;
 }

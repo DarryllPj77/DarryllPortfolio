@@ -1,0 +1,230 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+/* ---------- Construction grid drawing itself ---------- */
+.grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.vline,
+.hline {
+  position: absolute;
+  background: var(--grid-line);
+}
+
+.vline {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  transform-origin: top;
+  animation: draw-y 900ms var(--ease-out) both;
+}
+
+.hline {
+  left: 0;
+  right: 0;
+  height: 1px;
+  transform-origin: left;
+  animation: draw-x 900ms var(--ease-out) both;
+}
+
+.vline:nth-child(2),
+.hline:nth-child(6) {
+  animation-delay: 80ms;
+}
+
+.vline:nth-child(3),
+.hline:nth-child(7) {
+  animation-delay: 160ms;
+}
+
+.vline:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+@keyframes draw-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes draw-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* ---------- Skip ---------- */
+.skip {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-panel);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.skip:hover {
+  border-color: var(--color-text-muted);
+}
+
+.kbd {
+  padding: 0 5px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  font-size: var(--fs-2xs);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Centre piece ---------- */
+.center {
+  position: relative;
+  display: grid;
+  gap: var(--space-5);
+  width: min(440px, calc(100vw - 2 * var(--space-5)));
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.brand {
+  color: var(--color-accent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.frame {
+  position: relative;
+  height: 132px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-shell);
+}
+
+.cross {
+  position: absolute;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  background:
+    linear-gradient(var(--color-accent-line), var(--color-accent-line)) center / 1px 100% no-repeat,
+    linear-gradient(var(--color-accent-line), var(--color-accent-line)) center / 100% 1px no-repeat;
+}
+
+.cross[data-pos='tl'] {
+  top: 6px;
+  left: 6px;
+}
+
+.cross[data-pos='tr'] {
+  top: 6px;
+  right: 6px;
+}
+
+.cross[data-pos='bl'] {
+  bottom: 6px;
+  left: 6px;
+}
+
+.cross[data-pos='br'] {
+  bottom: 6px;
+  right: 6px;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-4);
+  padding-top: 44px;
+}
+
+.stageNumber {
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  color: var(--color-accent);
+}
+
+.stageName {
+  font-family: var(--font-display);
+  font-size: 2.5rem;
+  font-weight: 420;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.stages {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--color-border);
+}
+
+.stages li {
+  display: grid;
+  gap: 2px;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.stages li span {
+  color: inherit;
+}
+
+.stages li[data-state='done'] {
+  color: var(--color-text-muted);
+}
+
+.stages li[data-state='active'] {
+  color: var(--color-accent-2);
+}
+
+.progress {
+  height: 1px;
+  background: var(--color-border-subtle);
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transform-origin: left;
+}
+
+@media (max-width: 420px) {
+  .stages {
+    display: none;
+  }
+
+  .stageName {
+    font-size: 2rem;
+  }
+}

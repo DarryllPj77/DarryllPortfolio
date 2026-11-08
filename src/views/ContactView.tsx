@@ -4,6 +4,7 @@ import { ExternalLink } from '../components/ui/ExternalLink';
 import { Icon, type IconName } from '../components/ui/Icon';
 import { ViewFrame } from '../components/ui/ViewFrame';
 import { profile } from '../data/profile';
+import { Reveal } from '../motion/Reveal';
 import { socials } from '../data/socials';
 import styles from './Views.module.css';
 
@@ -49,10 +50,11 @@ export function ContactView() {
 
   return (
     <ViewFrame
+      section="contact"
       title="Contact"
-      path="portfolio/contact"
       description={`I'm looking for a ${profile.internship.label} starting ${profile.internship.availability}. Email is the best way to reach me.`}
     >
+      <Reveal>
       <ul role="list" className={styles.contactList}>
         <li className={`${styles.contactItem} ${styles.contactPrimary}`}>
           <span className={styles.contactIcon} aria-hidden="true">
@@ -90,6 +92,7 @@ export function ContactView() {
           </div>
         </li>
       </ul>
+      </Reveal>
     </ViewFrame>
   );
 }

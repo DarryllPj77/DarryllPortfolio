@@ -1,0 +1,11 @@
+.mask {
+  display: block;
+  overflow: hidden;
+  /* Room for descenders so the mask doesn't clip them. */
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.maskInner {
+  display: block;
+}

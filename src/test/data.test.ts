@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { certifications, formatMonth, isActive } from '../data/certifications';
-import { getViewMeta, navTree } from '../data/navigation';
+import { explorerTree, getViewMeta } from '../data/navigation';
 import { profile } from '../data/profile';
 import { projects } from '../data/projects';
 import { skillGroups } from '../data/skills';
@@ -42,8 +42,17 @@ describe('portfolio data', () => {
   });
 
   it('builds the Explorer tree from project data', () => {
-    const projectsNode = navTree.find((n) => n.id === 'projects');
-    expect(projectsNode?.children?.map((c) => c.label)).toEqual(projects.map((p) => p.name));
+    const projectsNode = explorerTree.find((n) => n.id === 'projects');
+    expect(projectsNode?.kind).toBe('folder');
+    if (projectsNode?.kind !== 'folder') return;
+    expect(projectsNode.children.map((c) => c.name)).toEqual([
+      'AcademicSentinel.cs',
+      'PreMatchTracker.jsx',
+      'SpendSync.js',
+    ]);
+    expect(projectsNode.children.map((c) => c.path)).toEqual(
+      projects.map((p) => `/projects/${p.slug}`),
+    );
   });
 
   it('resolves view metadata, including unknown paths', () => {

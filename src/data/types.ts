@@ -62,9 +62,20 @@ export interface ProjectLink {
   href: string;
 }
 
+export interface ProjectScreenshot {
+  /** Path under /public, e.g. "/projects/academic-sentinel/dashboard.webp". */
+  src: string;
+  alt: string;
+  caption?: string;
+  width: number;
+  height: number;
+}
+
 export interface Project {
   slug: string;
   name: string;
+  /** Workspace file name shown in the Explorer, e.g. "AcademicSentinel.cs". */
+  fileName: string;
   period: string;
   category: string;
   tagline: string;
@@ -75,6 +86,13 @@ export interface Project {
   contributions: string[];
   credit: ProjectCredit;
   links: ProjectLink[];
+  /*
+   * Optional case-study sections. Each one only appears on the project page
+   * once it has content. Fill these with real information only.
+   */
+  problem?: string;
+  features?: string[];
+  screenshots?: ProjectScreenshot[];
 }
 
 export type SkillLevel = 'primary' | 'fundamentals' | 'exposure' | 'tooling' | 'learning';
@@ -96,6 +114,8 @@ export interface SkillGroup {
 export interface Certification {
   id: string;
   name: string;
+  /** Workspace file name shown in the Explorer, e.g. "Python.cert". */
+  fileName: string;
   issuer: string;
   /** ISO year-month, e.g. "2025-07". */
   issued: string;

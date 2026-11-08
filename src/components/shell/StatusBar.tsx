@@ -1,43 +1,28 @@
-import type { ViewMeta } from '../../data/navigation';
-import { profile } from '../../data/profile';
 import type { LayoutMode } from '../../hooks/useMediaQuery';
-import { Icon } from '../ui/Icon';
+import { profile } from '../../data/profile';
 import styles from './StatusBar.module.css';
 
-interface StatusBarProps {
-  meta: ViewMeta;
-  layout: LayoutMode;
-}
-
-export function StatusBar({ meta, layout }: StatusBarProps) {
-  const { internship } = profile;
+/** Quiet strip with the essentials: focus area and OJT availability. */
+export function StatusBar({ layout }: { layout: LayoutMode }) {
   const compact = layout === 'mobile';
   return (
     <footer className={styles.statusbar}>
-      <div className={styles.group}>
+      {!compact ? (
+        <p className={styles.group}>
+          <span>C#</span>
+          <span className={styles.sep} aria-hidden="true">·</span>
+          <span>.NET</span>
+          <span className={styles.sep} aria-hidden="true">·</span>
+          <span>Software Engineering</span>
+        </p>
+      ) : null}
+      <p className={styles.group}>
         <span className={styles.item}>
+          {profile.internship.isOpen ? 'Available for OJT' : 'Not available for OJT'}
           <span className={styles.dot} aria-hidden="true" />
-          {compact ? 'Open to OJT' : `Open to internship · ${internship.label}`}
         </span>
-        {!compact ? (
-          <span className={styles.item}>
-            <Icon name="calendar" size={12} />
-            {internship.availability}
-          </span>
-        ) : null}
-      </div>
-      <div className={styles.group}>
-        {layout === 'desktop' ? <span className={styles.item}>C# · .NET</span> : null}
-        <span className={styles.item}>
-          <Icon name="map-pin" size={12} />
-          {profile.locationShort}
-        </span>
-        {layout === 'desktop' ? (
-          <span className={styles.item} aria-hidden="true">
-            {meta.title}
-          </span>
-        ) : null}
-      </div>
+        {compact ? <span className={styles.muted}>{profile.internship.availability}</span> : null}
+      </p>
     </footer>
   );
 }

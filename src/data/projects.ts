@@ -8,6 +8,7 @@ export const projects: Project[] = [
   {
     slug: 'academic-sentinel',
     name: 'Academic Sentinel',
+    fileName: 'AcademicSentinel.cs',
     period: '2025–2026',
     category: 'Desktop application',
     tagline: 'Anti-cheating desktop application with live exam monitoring.',
@@ -63,6 +64,7 @@ export const projects: Project[] = [
   {
     slug: 'prematch-tracker',
     name: 'PreMatch Tracker',
+    fileName: 'PreMatchTracker.jsx',
     period: '2026',
     category: 'Web application',
     tagline: 'Practice submissions and attendance review for a team.',
@@ -110,6 +112,7 @@ export const projects: Project[] = [
   {
     slug: 'spendsync',
     name: 'SpendSync',
+    fileName: 'SpendSync.js',
     period: '2026',
     category: 'Web application',
     tagline: 'Responsive finance tracker for personal and small-business use.',
@@ -154,3 +157,7 @@ export function getProject(slug: string | undefined): Project | undefined {
 }
 
 export const featuredProject: Project = projects.find((p) => p.featured) ?? projects[0];
+
+/** Two-digit case-study number, e.g. "01". */
+export const projectNumber = (slug: string) =>
+  String(projects.findIndex((p) => p.slug === slug) + 1).padStart(2, '0');

@@ -4,6 +4,7 @@ export const certifications: Certification[] = [
   {
     id: 'its-python',
     name: 'IT Specialist – Python',
+    fileName: 'Python.cert',
     issuer: 'Certiport, a Pearson VUE business',
     issued: '2025-07',
     expires: '2030-07',
@@ -11,6 +12,7 @@ export const certifications: Certification[] = [
   {
     id: 'pmi-pm-ready',
     name: 'PMI Project Management Ready',
+    fileName: 'PMI.cert',
     issuer: 'Project Management Institute',
     issued: '2026-03',
     expires: '2031-03',

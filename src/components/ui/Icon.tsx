@@ -24,7 +24,8 @@ export type IconName =
   | 'copy'
   | 'check'
   | 'calendar'
-  | 'clock';
+  | 'clock'
+  | 'braces';
 
 const strokePaths: Partial<Record<IconName, ReactNode>> = {
   home: (
@@ -113,6 +114,12 @@ const strokePaths: Partial<Record<IconName, ReactNode>> = {
     <>
       <rect x="3.5" y="5" width="17" height="15.5" rx="1.5" />
       <path d="M3.5 10h17M8 3v4M16 3v4" />
+    </>
+  ),
+  braces: (
+    <>
+      <path d="M8 4H7a2 2 0 0 0-2 2v3.5A2.5 2.5 0 0 1 2.5 12 2.5 2.5 0 0 1 5 14.5V18a2 2 0 0 0 2 2h1" />
+      <path d="M16 4h1a2 2 0 0 1 2 2v3.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0-2.5 2.5V18a2 2 0 0 1-2 2h-1" />
     </>
   ),
   clock: (

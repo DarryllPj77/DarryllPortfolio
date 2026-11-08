@@ -31,10 +31,23 @@ window.matchMedia = (query: string) =>
 
 window.scrollTo = () => {};
 Element.prototype.scrollTo = () => {};
+Element.prototype.scrollIntoView = () => {};
+
+// jsdom has no IntersectionObserver; reveal-on-scroll elements just show.
+class MockIntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
 beforeEach(() => {
   window.innerWidth = 1280;
   window.localStorage.clear();
+  window.sessionStorage.clear();
 });
 
 afterEach(() => cleanup());

@@ -33,7 +33,9 @@
   /* Typography */
   --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto,
     sans-serif;
-  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'Cascadia Code',
+  /* Display face: hero and section headings only (≥ 28px). */
+  --font-display: 'Fraunces Variable', 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-mono:'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'Cascadia Code',
     Consolas, monospace;
 
   --fs-2xs: 0.6875rem;
@@ -43,7 +45,8 @@
   --fs-md: 1.125rem;
   --fs-lg: 1.375rem;
   --fs-xl: clamp(1.625rem, 1.3rem + 1.2vw, 2rem);
-  --fs-hero: clamp(2.25rem, 1.6rem + 2.8vw, 3.5rem);
+  --fs-display: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  --fs-hero: clamp(2.75rem, 1.8rem + 4.2vw, 4.75rem);
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -66,10 +69,15 @@
   --tabs-h: 38px;
   --content-max: 1040px;
 
-  /* Motion */
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --dur-fast: 120ms;
-  --dur: 200ms;
+  /* Motion: keep in sync with src/motion/tokens.ts */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 180ms;
+  --dur: 300ms;
+  --dur-section: 500ms;
+
+  /* Construction grid */
+  --grid-line: rgb(148 163 184 / 0.09);
+  --grid-mark: rgb(148 163 184 / 0.35);
 
   --shadow-overlay: 0 16px 40px rgb(2 6 23 / 0.45);
 }

@@ -35,7 +35,7 @@ export function ArchitectureFlow({ architecture }: { architecture: ProjectArchit
   const { nodes, realtime } = architecture;
   return (
     <figure className={styles.architecture}>
-      <ol role="list" className={styles.flow}>
+      <ol role="list" className={styles.flow} aria-label="System architecture">
         {nodes.map((node, i) => (
           <li key={node.label} className={styles.flowItem}>
             <div className={styles.node}>

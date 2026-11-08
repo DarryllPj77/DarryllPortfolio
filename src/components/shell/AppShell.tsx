@@ -4,37 +4,37 @@ import { useLocation } from 'react-router';
 import { getViewMeta } from '../../data/navigation';
 import { profile } from '../../data/profile';
 import { useLayoutMode } from '../../hooks/useMediaQuery';
-import { useOpenTabs } from '../../hooks/useOpenTabs';
 import { useSidebarState } from '../../hooks/useSidebarState';
+import { useIntro } from '../../intro/introContext';
+import { duration, ease } from '../../motion/tokens';
 import { ActivityRail } from './ActivityRail';
 import styles from './AppShell.module.css';
 import { Explorer } from './Explorer';
+import { MobileMenu } from './MobileMenu';
 import { SidebarResizer } from './SidebarResizer';
 import { StatusBar } from './StatusBar';
-import { TabStrip } from './TabStrip';
 import { TopBar } from './TopBar';
 import { Workspace } from './Workspace';
 
-const EASE = [0.2, 0.8, 0.2, 1] as const;
-
 /**
- * The workspace shell:
- * - desktop: rail + resizable, collapsible Explorer + tabs + content
- * - tablet:  rail + Explorer as an overlay
- * - mobile:  top bar with a menu button that opens the Explorer as a drawer
+ * The workspace shell. The page scrolls natively; the top bar, the Explorer
+ * column and the status bar stay pinned.
+ * - desktop: top nav + rail + resizable, collapsible Explorer
+ * - tablet:  top nav + rail; Explorer opens as an overlay
+ * - mobile:  top bar with a menu button; full-screen menu, no Explorer
  */
 export function AppShell() {
   const location = useLocation();
   const meta = getViewMeta(location.pathname);
   const layout = useLayoutMode();
   const isDesktop = layout === 'desktop';
+  const isMobile = layout === 'mobile';
   const reduceMotion = useReducedMotion();
+  const intro = useIntro();
 
   const sidebar = useSidebarState();
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const { tabs, current, close } = useOpenTabs(location.pathname);
-
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
 
@@ -45,7 +45,7 @@ export function AppShell() {
     setOverlayOpen(false);
   }
 
-  const explorerOpen = isDesktop ? !sidebar.collapsed : overlayOpen;
+  const explorerOpen = isDesktop ? !sidebar.collapsed : !isMobile && overlayOpen;
   const overlayActive = !isDesktop && overlayOpen;
   const { toggle: toggleSidebar } = sidebar;
 
@@ -54,21 +54,26 @@ export function AppShell() {
     else setOverlayOpen((open) => !open);
   }, [isDesktop, toggleSidebar]);
 
-  const closeOverlay = useCallback((returnFocus: boolean) => {
-    setOverlayOpen(false);
-    if (returnFocus) menuButtonRef.current?.focus();
-  }, []);
+  const closeOverlay = useCallback(
+    (returnFocus: boolean) => {
+      setOverlayOpen(false);
+      if (returnFocus && isMobile) menuButtonRef.current?.focus();
+    },
+    [isMobile],
+  );
 
   useEffect(() => {
-    const suffix = profile.fullName;
     document.title =
-      meta.path === '/' ? `${suffix} · ${profile.focus}` : `${meta.title} · ${suffix}`;
+      meta.path === '/'
+        ? `${profile.fullName} · ${profile.focus}`
+        : `${meta.title} · ${profile.fullName}`;
   }, [meta.path, meta.title]);
 
-  // Ctrl/Cmd + B toggles the Explorer; Escape closes the overlay.
+  // Ctrl/Cmd + B toggles the Explorer; Escape closes overlays.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'b') {
+        if (isMobile) return;
         e.preventDefault();
         toggleExplorer();
       } else if (e.key === 'Escape' && overlayActive) {
@@ -77,25 +82,26 @@ export function AppShell() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [toggleExplorer, overlayActive, closeOverlay]);
+  }, [toggleExplorer, overlayActive, closeOverlay, isMobile]);
 
-  // Move focus into the overlay when it opens.
+  // Tablet: move focus into the Explorer overlay when it opens.
   useEffect(() => {
-    if (!overlayActive) return;
+    if (!overlayActive || isMobile) return;
     const panel = panelRef.current;
-    const target =
+    (
       panel?.querySelector<HTMLElement>('a[aria-current="page"]') ??
-      panel?.querySelector<HTMLElement>('a[href]');
-    target?.focus();
-  }, [overlayActive]);
+      panel?.querySelector<HTMLElement>('a[href]')
+    )?.focus();
+  }, [overlayActive, isMobile]);
 
-  const duration = dragging || reduceMotion ? 0 : 0.18;
+  const panelDuration = dragging || reduceMotion ? 0 : duration.fast;
 
   return (
     <div
       className={styles.shell}
       data-layout={layout}
       data-dragging={dragging || undefined}
+      inert={intro.active}
     >
       <a href="#main" className="skip-link">
         Skip to content
@@ -109,46 +115,45 @@ export function AppShell() {
       />
 
       <div className={styles.body}>
-        {layout !== 'mobile' ? (
-          <ActivityRail explorerOpen={explorerOpen} onToggleExplorer={toggleExplorer} />
-        ) : null}
-
-        <AnimatePresence initial={false}>
-          {explorerOpen ? (
-            <motion.aside
-              key={layout}
-              id="explorer-panel"
-              ref={panelRef}
-              aria-label="Explorer"
-              className={styles.sidebar}
-              initial={isDesktop ? { width: 0 } : { opacity: 0, x: -16 }}
-              animate={isDesktop ? { width: sidebar.width } : { opacity: 1, x: 0 }}
-              exit={isDesktop ? { width: 0 } : { opacity: 0, x: -16 }}
-              transition={{ duration, ease: EASE }}
-            >
-              <div
-                className={styles.sidebarInner}
-                style={isDesktop ? { width: sidebar.width } : undefined}
-              >
-                <Explorer
-                  pathname={location.pathname}
-                  onNavigate={overlayActive ? () => setOverlayOpen(false) : undefined}
-                />
-              </div>
-            </motion.aside>
-          ) : null}
-        </AnimatePresence>
-
-        {isDesktop && explorerOpen ? (
-          <SidebarResizer
-            width={sidebar.width}
-            onResize={sidebar.setWidth}
-            onDraggingChange={setDragging}
-          />
-        ) : null}
+        {!isMobile ? (
+          <div className={styles.side}>
+            <ActivityRail explorerOpen={explorerOpen} onToggleExplorer={toggleExplorer} />
+            <AnimatePresence initial={false}>
+              {explorerOpen ? (
+                <motion.aside
+                  key={layout}
+                  id="explorer-panel"
+                  ref={panelRef}
+                  aria-label="Explorer"
+                  className={styles.sidebar}
+                  initial={isDesktop ? { width: 0 } : { opacity: 0, x: -12 }}
+                  animate={isDesktop ? { width: sidebar.width } : { opacity: 1, x: 0 }}
+                  exit={isDesktop ? { width: 0 } : { opacity: 0, x: -12 }}
+                  transition={{ duration: panelDuration, ease: ease.out }}
+                >
+                  <div
+                    className={styles.sidebarInner}
+                    style={isDesktop ? { width: sidebar.width } : undefined}
+                  >
+                    <Explorer onNavigate={overlayActive ? () => setOverlayOpen(false) : undefined} />
+                  </div>
+                </motion.aside>
+              ) : null}
+            </AnimatePresence>
+            {isDesktop && explorerOpen ? (
+              <SidebarResizer
+                width={sidebar.width}
+                onResize={sidebar.setWidth}
+                onDraggingChange={setDragging}
+              />
+            ) : null}
+          </div>
+        ) : (
+          <MobileMenu open={overlayActive} meta={meta} onClose={() => setOverlayOpen(false)} />
+        )}
 
         <AnimatePresence>
-          {overlayActive ? (
+          {overlayActive && !isMobile ? (
             <motion.div
               key="scrim"
               className={styles.scrim}
@@ -157,22 +162,17 @@ export function AppShell() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: reduceMotion ? 0 : 0.15 }}
+              transition={{ duration: reduceMotion ? 0 : duration.fast }}
             />
           ) : null}
         </AnimatePresence>
 
-        <div className={styles.workspace} inert={overlayActive}>
-          {layout !== 'mobile' && tabs.length > 0 ? (
-            <TabStrip tabs={tabs} current={current} onClose={close} />
-          ) : null}
-          <main id="main" tabIndex={-1} className={styles.main}>
-            <Workspace />
-          </main>
-        </div>
+        <main id="main" tabIndex={-1} className={styles.main} inert={overlayActive}>
+          <Workspace paused={intro.active} />
+        </main>
       </div>
 
-      <StatusBar meta={meta} layout={layout} />
+      <StatusBar layout={layout} />
     </div>
   );
 }

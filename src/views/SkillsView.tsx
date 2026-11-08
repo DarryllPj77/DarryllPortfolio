@@ -1,7 +1,8 @@
-import { SectionTitle, ViewFrame } from '../components/ui/ViewFrame';
 import { Badge, Tag, type BadgeTone } from '../components/ui/Tag';
+import { SectionTitle, ViewFrame } from '../components/ui/ViewFrame';
 import { skillGroups, skillLevels } from '../data/skills';
 import type { SkillLevel } from '../data/types';
+import { Reveal } from '../motion/Reveal';
 import styles from './Views.module.css';
 
 const levelTone: Record<SkillLevel, BadgeTone> = {
@@ -15,11 +16,11 @@ const levelTone: Record<SkillLevel, BadgeTone> = {
 export function SkillsView() {
   return (
     <ViewFrame
+      section="skills"
       title="Skills"
-      path="portfolio/skills"
       description="Grouped by how much I have actually used them. Labels mark where my experience is limited to fundamentals or project exposure."
     >
-      <section aria-labelledby="skill-legend" className={styles.legendSection}>
+      <Reveal as="section" aria-labelledby="skill-legend" className={styles.legendSection}>
         <SectionTitle id="skill-legend">How to read this</SectionTitle>
         <dl className={styles.legend}>
           {(Object.keys(skillLevels) as SkillLevel[]).map((level) => (
@@ -31,9 +32,9 @@ export function SkillsView() {
             </div>
           ))}
         </dl>
-      </section>
+      </Reveal>
 
-      <div className={styles.skillGrid}>
+      <Reveal className={styles.skillGrid}>
         {skillGroups.map((group) => {
           const headingId = `skills-${group.id}`;
           return (
@@ -62,7 +63,7 @@ export function SkillsView() {
             </section>
           );
         })}
-      </div>
+      </Reveal>
     </ViewFrame>
   );
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import {
   ArchitectureFlow,
@@ -5,12 +6,27 @@ import {
   CreditBadge,
   ProjectLinks,
 } from '../components/projects/ProjectParts';
+import { GridFrame, SectionLabel } from '../components/ui/Grid';
 import { Icon } from '../components/ui/Icon';
 import { TagList } from '../components/ui/Tag';
-import { SectionTitle, ViewFrame } from '../components/ui/ViewFrame';
-import { getProject, projects } from '../data/projects';
+import { ViewHeading } from '../components/ui/ViewFrame';
+import { sections } from '../data/navigation';
+import { getProject, projectNumber, projects } from '../data/projects';
+import { MaskedText, Reveal } from '../motion/Reveal';
 import { NotFoundView } from './NotFoundView';
-import styles from './Views.module.css';
+import styles from './ProjectDetailView.module.css';
+
+/** One case-study row: label on the left, content on the right, thin rule between rows. */
+function Row({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+  return (
+    <Reveal as="section" trigger="scroll" className={styles.row} aria-labelledby={id}>
+      <h2 id={id} className={styles.rowLabel}>
+        {label}
+      </h2>
+      <div className={styles.rowBody}>{children}</div>
+    </Reveal>
+  );
+}
 
 export function ProjectDetailView() {
   const { slug } = useParams();
@@ -20,85 +36,134 @@ export function ProjectDetailView() {
   const index = projects.indexOf(project);
   const prev = projects[index - 1];
   const next = projects[index + 1];
+  const number = projectNumber(project.slug);
 
   return (
-    <ViewFrame
-      title={project.name}
-      path={`portfolio/projects/${project.slug}`}
-      description={project.tagline}
-    >
-      <Link to="/projects" className={styles.back}>
-        <Icon name="arrow-left" size={14} />
-        All projects
-      </Link>
-
-      <div className={styles.metaRow}>
-        <span className={styles.metaItem}>
-          <Icon name="calendar" size={14} />
-          {project.period}
-        </span>
-        <span className={styles.metaItem}>
-          <Icon name="file-code" size={14} />
-          {project.category}
-        </span>
-        <CreditBadge project={project} />
-      </div>
-
-      <div className={styles.stack}>
-        <section aria-labelledby="overview">
-          <SectionTitle id="overview">Overview</SectionTitle>
-          <p className={styles.lead}>{project.summary}</p>
-          <div className={styles.linksRow}>
+    <GridFrame>
+      <article>
+        <header className={styles.header}>
+          <Reveal>
+            <Link to="/projects" className={styles.back}>
+              <Icon name="arrow-left" size={14} />
+              Back to Projects
+            </Link>
+          </Reveal>
+          <Reveal>
+            <SectionLabel
+              index={sections.projects.index}
+              label={`Case study ${number}`}
+              meta={`~/projects/${project.fileName}`}
+            />
+          </Reveal>
+          <ViewHeading className={styles.title}>
+            <MaskedText>{project.name}</MaskedText>
+          </ViewHeading>
+          <Reveal as="p" className={styles.tagline}>
+            {project.tagline}
+          </Reveal>
+          <Reveal className={styles.meta}>
+            <dl className={styles.facts}>
+              <div>
+                <dt>Year</dt>
+                <dd>{project.period}</dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>{project.category}</dd>
+              </div>
+              <div>
+                <dt>Built</dt>
+                <dd>
+                  <CreditBadge project={project} />
+                </dd>
+              </div>
+            </dl>
             <ProjectLinks project={project} />
-          </div>
-        </section>
+          </Reveal>
+        </header>
 
-        {project.architecture ? (
-          <section aria-labelledby="architecture">
-            <SectionTitle id="architecture">Architecture</SectionTitle>
-            <ArchitectureFlow architecture={project.architecture} />
-          </section>
-        ) : null}
+        <div className={styles.rows}>
+          <Row id="overview" label="Overview">
+            <p className={styles.lead}>{project.summary}</p>
+          </Row>
 
-        <div className={styles.split}>
-          <section aria-labelledby="contribution">
-            <SectionTitle id="contribution">My contribution</SectionTitle>
+          {project.problem ? (
+            <Row id="problem" label="Problem">
+              <p>{project.problem}</p>
+            </Row>
+          ) : null}
+
+          <Row id="contribution" label="My contribution">
             <ContributionList items={project.contributions} />
-          </section>
-          <section aria-labelledby="how-built" className={styles.panel}>
-            <SectionTitle id="how-built">How it was built</SectionTitle>
-            <p className={styles.muted}>{project.credit.note}</p>
-          </section>
+            <p className={styles.note}>{project.credit.note}</p>
+          </Row>
+
+          {project.architecture ? (
+            <Row id="architecture" label="Architecture">
+              <ArchitectureFlow architecture={project.architecture} />
+            </Row>
+          ) : null}
+
+          <Row id="technologies" label="Technologies">
+            <TagList items={project.stack} label={`${project.name} tech stack`} />
+          </Row>
+
+          {project.features?.length ? (
+            <Row id="features" label="Features">
+              <ul className={styles.features}>
+                {project.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </Row>
+          ) : null}
+
+          {project.screenshots?.length ? (
+            <Row id="screenshots" label="Screenshots">
+              <div className={styles.shots}>
+                {project.screenshots.map((shot) => (
+                  <figure key={shot.src} className={styles.shot}>
+                    <img
+                      src={shot.src}
+                      alt={shot.alt}
+                      width={shot.width}
+                      height={shot.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                    {shot.caption ? <figcaption>{shot.caption}</figcaption> : null}
+                  </figure>
+                ))}
+              </div>
+            </Row>
+          ) : null}
+
+          <Row id="links" label="Links">
+            <ProjectLinks project={project} />
+          </Row>
         </div>
 
-        <section aria-labelledby="stack">
-          <SectionTitle id="stack">Tech stack</SectionTitle>
-          <TagList items={project.stack} label={`${project.name} tech stack`} />
-        </section>
-
-        <nav aria-label="More projects" className={styles.pager}>
+        <nav aria-label="More case studies" className={styles.pager}>
           {prev ? (
             <Link to={`/projects/${prev.slug}`} className={styles.pagerLink}>
-              <span className={styles.pagerHint}>Previous</span>
-              <span className={styles.pagerName}>
-                <Icon name="arrow-left" size={14} />
-                {prev.name}
+              <span className={styles.pagerHint}>
+                <Icon name="arrow-left" size={12} /> Previous
               </span>
+              <span className={styles.pagerName}>{prev.name}</span>
             </Link>
           ) : (
             <span />
           )}
           {next ? (
             <Link to={`/projects/${next.slug}`} className={`${styles.pagerLink} ${styles.pagerNext}`}>
-              <span className={styles.pagerHint}>Next</span>
-              <span className={styles.pagerName}>
-                {next.name}
-                <Icon name="arrow-right" size={14} />
+              <span className={styles.pagerHint}>
+                Next <Icon name="arrow-right" size={12} />
               </span>
+              <span className={styles.pagerName}>{next.name}</span>
             </Link>
           ) : null}
         </nav>
-      </div>
-    </ViewFrame>
+      </article>
+    </GridFrame>
   );
 }

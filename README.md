@@ -17,8 +17,12 @@ npm test         # vitest
 ## Where things live
 
 - `src/data/`: all content (profile, projects, skills, certifications, social links). Edit text and URLs here.
-- `src/components/shell/`: the workspace shell (top bar, Explorer, tabs, status bar).
-- `src/components/3d/`: avatar slot and placeholder. `AvatarScene` is where the future React Three Fiber avatar goes; switch `avatarConfig.mode` to `'scene'` to load it.
+- `src/data/navigation.ts`: section numbers, top nav, mobile menu and the Explorer file tree.
+- `src/components/shell/`: the workspace shell (top nav, Explorer, mobile menu, status bar).
+- `src/motion/`: motion tokens (durations, easing), shared variants and `Reveal`/`MaskedText`.
+- `src/intro/`: the "Building darryll.dev" intro (once per session, Home only, skippable).
+- `src/components/3d/`: avatar slot, placeholder, `AvatarScene` and `AvatarModel` stubs, and the planned per-section reactions. Switch `avatarConfig.mode` to `'scene'` once the model exists.
+- Optional case-study fields (`problem`, `features`, `screenshots`) in `src/data/projects.ts` appear on project pages once filled in.
 - `src/views/`: one component per page.
 - `src/styles/tokens.css`: colours, fonts, spacing.
 
