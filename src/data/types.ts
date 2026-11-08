@@ -63,12 +63,35 @@ export interface ProjectLink {
 }
 
 export interface ProjectScreenshot {
-  /** Path under /public, e.g. "/projects/academic-sentinel/dashboard.webp". */
+  /** Path under /public, e.g. "/image/projects/academic-sentinel/teacher-login.jpg". */
   src: string;
   alt: string;
-  caption?: string;
+  caption: string;
+  /** Intrinsic size of the file. Screenshots are never shown larger than this. */
   width: number;
   height: number;
+}
+
+/**
+ * How a set of screenshots is laid out inside a case-study chapter:
+ * - `feature`: one large screenshot
+ * - `pair`: two related screenshots side by side
+ * - `grid`: smaller supporting screenshots
+ * - `log`: short, wide crops of log entries, stacked like a feed
+ */
+export type ScreenshotLayout = 'feature' | 'pair' | 'grid' | 'log';
+
+export interface ScreenshotBlock {
+  layout: ScreenshotLayout;
+  shots: ProjectScreenshot[];
+}
+
+/** One part of the product story (e.g. "Teacher workflow") with its screenshots. */
+export interface CaseStudyChapter {
+  id: string;
+  title: string;
+  intro: string;
+  blocks: ScreenshotBlock[];
 }
 
 export interface Project {
@@ -91,8 +114,12 @@ export interface Project {
    * once it has content. Fill these with real information only.
    */
   problem?: string;
+  /** "What it does": plain statements of features the project actually has. */
   features?: string[];
-  screenshots?: ProjectScreenshot[];
+  /** Main screenshot, shown under the case-study header. */
+  hero?: ProjectScreenshot;
+  /** Screenshot chapters, shown in order after "My contribution". */
+  chapters?: CaseStudyChapter[];
 }
 
 export type SkillLevel = 'primary' | 'fundamentals' | 'exposure' | 'tooling' | 'learning';

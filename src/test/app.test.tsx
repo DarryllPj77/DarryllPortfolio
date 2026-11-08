@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -89,6 +89,54 @@ describe('app shell', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Architecture' })).toBeInTheDocument();
   });
 
+  it('tells the Academic Sentinel story in order, with a hero screenshot', () => {
+    renderAt('/projects/academic-sentinel');
+    const main = screen.getByRole('main');
+    expect(within(main).getByRole('button', { name: /console with monitoring active/i })).toBeInTheDocument();
+    const headings = within(main)
+      .getAllByRole('heading', { level: 2 })
+      .map((h) => h.textContent);
+    expect(headings).toEqual([
+      'Overview',
+      'What it does',
+      'My contribution',
+      'Accounts',
+      'Teacher workflow',
+      'Student workflow',
+      'Live monitoring',
+      'Violation detection',
+      'Reports and session history',
+      'Architecture',
+      'Technologies',
+      'Links',
+    ]);
+  });
+
+  it('opens screenshots in a viewer with keyboard navigation inside the group', async () => {
+    const user = userEvent.setup();
+    renderAt('/projects/academic-sentinel');
+    const opener = screen.getByRole('button', { name: /teacher dashboard listing/i });
+    await user.click(opener);
+
+    const dialog = screen.getByRole('dialog', { name: 'Teacher workflow screenshots' });
+    expect(within(dialog).getByRole('button', { name: /close/i })).toHaveFocus();
+    expect(dialog).toHaveTextContent('2 / 6');
+    expect(dialog).toHaveTextContent('Course dashboard');
+
+    await user.keyboard('{ArrowRight}');
+    expect(dialog).toHaveTextContent('3 / 6');
+    expect(dialog).toHaveTextContent('Session setup');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Previous screenshot' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Previous screenshot' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Previous screenshot' }));
+    expect(dialog).toHaveTextContent('6 / 6');
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(opener).toHaveFocus();
+  });
+
   it('jumps to a certification from its .cert file', async () => {
     const user = userEvent.setup();
     renderAt('/');
@@ -127,7 +175,9 @@ describe('intro', () => {
     const skip = within(dialog).getByRole('button', { name: /skip intro/i });
     expect(skip).toHaveFocus();
     await user.click(skip);
-    expect(screen.queryByRole('dialog', { name: 'Site intro' })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Site intro' })).not.toBeInTheDocument(),
+    );
     expect(window.sessionStorage.getItem(INTRO_SEEN_KEY)).toBe('1');
   });
 

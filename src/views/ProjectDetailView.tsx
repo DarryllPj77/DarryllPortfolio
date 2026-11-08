@@ -6,6 +6,7 @@ import {
   CreditBadge,
   ProjectLinks,
 } from '../components/projects/ProjectParts';
+import { Gallery } from '../components/projects/Gallery';
 import { GridFrame, SectionLabel } from '../components/ui/Grid';
 import { Icon } from '../components/ui/Icon';
 import { TagList } from '../components/ui/Tag';
@@ -16,14 +17,23 @@ import { MaskedText, Reveal } from '../motion/Reveal';
 import { NotFoundView } from './NotFoundView';
 import styles from './ProjectDetailView.module.css';
 
+interface RowProps {
+  id: string;
+  label: string;
+  children: ReactNode;
+  /** Full-width content under the row, e.g. screenshots. */
+  media?: ReactNode;
+}
+
 /** One case-study row: label on the left, content on the right, thin rule between rows. */
-function Row({ id, label, children }: { id: string; label: string; children: ReactNode }) {
+function Row({ id, label, children, media }: RowProps) {
   return (
     <Reveal as="section" trigger="scroll" className={styles.row} aria-labelledby={id}>
       <h2 id={id} className={styles.rowLabel}>
         {label}
       </h2>
       <div className={styles.rowBody}>{children}</div>
+      {media ? <div className={styles.rowMedia}>{media}</div> : null}
     </Reveal>
   );
 }
@@ -82,6 +92,16 @@ export function ProjectDetailView() {
           </Reveal>
         </header>
 
+        {project.hero ? (
+          <Reveal className={styles.hero}>
+            <Gallery
+              blocks={[{ layout: 'feature', shots: [project.hero] }]}
+              label={project.name}
+              eager
+            />
+          </Reveal>
+        ) : null}
+
         <div className={styles.rows}>
           <Row id="overview" label="Overview">
             <p className={styles.lead}>{project.summary}</p>
@@ -93,10 +113,31 @@ export function ProjectDetailView() {
             </Row>
           ) : null}
 
+          {project.features?.length ? (
+            <Row id="features" label="What it does">
+              <ul className={styles.features}>
+                {project.features.map((feature) => (
+                  <li key={feature}>{feature}</li>
+                ))}
+              </ul>
+            </Row>
+          ) : null}
+
           <Row id="contribution" label="My contribution">
             <ContributionList items={project.contributions} />
             <p className={styles.note}>{project.credit.note}</p>
           </Row>
+
+          {project.chapters?.map((chapter) => (
+            <Row
+              key={chapter.id}
+              id={chapter.id}
+              label={chapter.title}
+              media={<Gallery blocks={chapter.blocks} label={chapter.title} />}
+            >
+              <p>{chapter.intro}</p>
+            </Row>
+          ))}
 
           {project.architecture ? (
             <Row id="architecture" label="Architecture">
@@ -107,36 +148,6 @@ export function ProjectDetailView() {
           <Row id="technologies" label="Technologies">
             <TagList items={project.stack} label={`${project.name} tech stack`} />
           </Row>
-
-          {project.features?.length ? (
-            <Row id="features" label="Features">
-              <ul className={styles.features}>
-                {project.features.map((feature) => (
-                  <li key={feature}>{feature}</li>
-                ))}
-              </ul>
-            </Row>
-          ) : null}
-
-          {project.screenshots?.length ? (
-            <Row id="screenshots" label="Screenshots">
-              <div className={styles.shots}>
-                {project.screenshots.map((shot) => (
-                  <figure key={shot.src} className={styles.shot}>
-                    <img
-                      src={shot.src}
-                      alt={shot.alt}
-                      width={shot.width}
-                      height={shot.height}
-                      loading="lazy"
-                      decoding="async"
-                    />
-                    {shot.caption ? <figcaption>{shot.caption}</figcaption> : null}
-                  </figure>
-                ))}
-              </div>
-            </Row>
-          ) : null}
 
           <Row id="links" label="Links">
             <ProjectLinks project={project} />

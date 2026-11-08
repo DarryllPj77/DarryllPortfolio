@@ -22,7 +22,7 @@ npm test         # vitest
 - `src/motion/`: motion tokens (durations, easing), shared variants and `Reveal`/`MaskedText`.
 - `src/intro/`: the "Building darryll.dev" intro (once per session, Home only, skippable).
 - `src/components/3d/`: avatar slot, placeholder, `AvatarScene` and `AvatarModel` stubs, and the planned per-section reactions. Switch `avatarConfig.mode` to `'scene'` once the model exists.
-- Optional case-study fields (`problem`, `features`, `screenshots`) in `src/data/projects.ts` appear on project pages once filled in.
+- Optional case-study fields (`problem`, `features`, `hero`, `chapters`) in `src/data/projects.ts` appear on project pages once filled in. Academic Sentinel's screenshots, captions and grouping are in `src/data/academicSentinelScreenshots.ts`; the files themselves are in `public/image/projects/academic-sentinel/`.
 - `src/views/`: one component per page.
 - `src/styles/tokens.css`: colours, fonts, spacing.
 

@@ -1,3 +1,4 @@
+import { academicSentinelChapters, academicSentinelHero } from './academicSentinelScreenshots';
 import type { Project } from './types';
 
 /**
@@ -60,6 +61,15 @@ export const projects: Project[] = [
         href: 'https://github.com/DarryllPj77/AcademicSentinel-BackupRepo',
       },
     ],
+    features: [
+      'Teachers create course rooms with a generated code, and students join with that code.',
+      'Each exam session is set up with an exam type, the LMS exam URL students must stay on, allowed apps and the detection rules to use.',
+      'During an exam the desktop client reports window switches, clipboard copy and paste, screenshots, idle time, unauthorized processes and multiple monitors.',
+      'Teachers follow a live log feed and each student’s status, and approve or deny requests to finish.',
+      'Violations add up to a penalty score and risk level, and past sessions are archived with per-student activity logs and PDF export.',
+    ],
+    hero: academicSentinelHero,
+    chapters: academicSentinelChapters,
   },
   {
     slug: 'prematch-tracker',
