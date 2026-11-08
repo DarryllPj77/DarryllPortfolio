@@ -1,0 +1,103 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* Never let intrinsic widths (e.g. the top bar) widen the page. */
+  grid-template-columns: minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.shell[data-dragging] {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.body {
+  position: relative;
+  display: flex;
+  min-height: 0;
+}
+
+.sidebar {
+  flex-shrink: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-shell);
+  border-right: 1px solid var(--color-border-subtle);
+}
+
+.sidebarInner {
+  height: 100%;
+}
+
+.workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-padding-top: var(--space-4);
+}
+
+.main:focus {
+  outline: none;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgb(15 23 42 / 0.65);
+}
+
+/* Tablet: the Explorer floats over the content next to the rail. */
+.shell[data-layout='tablet'] .sidebar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--rail-w);
+  z-index: 30;
+  width: min(300px, 70vw);
+  box-shadow: var(--shadow-overlay);
+}
+
+.shell[data-layout='tablet'] .scrim {
+  left: var(--rail-w);
+}
+
+/* Mobile: normal document scrolling, Explorer becomes a drawer. */
+.shell[data-layout='mobile'] {
+  height: auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.shell[data-layout='mobile'] .main {
+  overflow: visible;
+}
+
+.shell[data-layout='mobile'] .sidebar {
+  position: fixed;
+  top: var(--topbar-h);
+  bottom: 0;
+  left: 0;
+  z-index: 45;
+  width: min(320px, 86vw);
+  height: auto;
+  box-shadow: var(--shadow-overlay);
+}
+
+.shell[data-layout='mobile'] .scrim {
+  position: fixed;
+  top: var(--topbar-h);
+  z-index: 40;
+}

@@ -1,0 +1,115 @@
+.strip {
+  flex-shrink: 0;
+  height: var(--tabs-h);
+  background: var(--color-shell);
+  border-bottom: 1px solid var(--color-border-subtle);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.list {
+  display: flex;
+  height: 100%;
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+}
+
+.tab[data-active] {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.tab[data-active]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+/* The active tab visually merges with the workspace below it. */
+.tab[data-active]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--color-bg);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 100%;
+  min-width: 0;
+  padding: 0 var(--space-2) 0 var(--space-4);
+  font-size: var(--fs-sm);
+}
+
+.link:focus-visible {
+  outline-offset: -2px;
+}
+
+.tab:not([data-active]):hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.icon {
+  color: var(--color-text-muted);
+}
+
+.tab[data-active] .icon {
+  color: var(--color-accent);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-right: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.tab[data-active] .close,
+.tab:hover .close,
+.close:focus-visible {
+  opacity: 1;
+}
+
+.close:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+@media (hover: none) {
+  .close {
+    opacity: 1;
+  }
+}

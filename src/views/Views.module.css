@@ -1,0 +1,365 @@
+/* ---------- Layout helpers ---------- */
+.stack {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.panel {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+}
+
+.prose {
+  display: grid;
+  gap: var(--space-4);
+  max-width: 65ch;
+  color: var(--color-text-muted);
+}
+
+.prose p:first-child {
+  color: var(--color-text);
+  font-size: var(--fs-md);
+}
+
+.lead {
+  max-width: 70ch;
+  color: var(--color-text-muted);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
+}
+
+.linksRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* ---------- About ---------- */
+.facts {
+  display: grid;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: var(--fs-sm);
+}
+
+.fact:last-child {
+  border-bottom: 0;
+}
+
+.fact dt {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.9;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Skills ---------- */
+.legendSection {
+  margin-bottom: var(--space-6);
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--space-3) var(--space-5);
+}
+
+.legendItem {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.skillGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+  gap: var(--space-4);
+}
+
+.skillCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+}
+
+.skillCard[data-level='primary'] {
+  grid-column: 1 / -1;
+  border-color: var(--color-accent-line);
+  background: linear-gradient(90deg, var(--color-accent-soft), transparent 60%), var(--color-panel);
+}
+
+.skillHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.skillTitle {
+  font-size: var(--fs-base);
+}
+
+.skillDescription {
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.skillItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.skillCard[data-level='primary'] .skillItems span {
+  padding: var(--space-1) var(--space-3);
+  border-color: var(--color-accent-line);
+  font-size: var(--fs-base);
+  font-weight: 600;
+}
+
+/* ---------- Project detail ---------- */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+}
+
+.back:hover {
+  color: var(--color-text);
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+
+.pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.pagerLink {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.pagerLink:hover {
+  border-color: var(--color-border);
+}
+
+.pagerNext {
+  justify-items: end;
+  text-align: right;
+}
+
+.pagerHint {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.pagerName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+
+/* ---------- Certifications ---------- */
+.certList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
+  gap: var(--space-4);
+}
+
+.cert {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+}
+
+.certIcon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.certBody {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.certHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.certTitle {
+  font-size: var(--fs-base);
+}
+
+.certDates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+  font-size: var(--fs-sm);
+}
+
+.certDates dt {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+/* ---------- Contact ---------- */
+.contactList {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 640px;
+}
+
+.contactItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.contactItem:hover,
+.contactItem:focus-within {
+  border-color: var(--color-border);
+}
+
+.contactPrimary {
+  border-color: var(--color-accent-line);
+}
+
+.contactIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-elevated);
+  color: var(--color-accent);
+}
+
+.contactBody {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.contactLabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.contactValue {
+  overflow-wrap: anywhere;
+  font-weight: 550;
+}
+
+a.contactValue:hover {
+  color: var(--color-accent);
+}
+
+/* Makes the whole row clickable while keeping a single link in the markup. */
+a.contactValue::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.contactItem:has(a.contactValue) {
+  position: relative;
+}
+
+.contactPrimary a.contactValue::after {
+  content: none;
+}
+
+.contactTrail {
+  color: var(--color-text-muted);
+}

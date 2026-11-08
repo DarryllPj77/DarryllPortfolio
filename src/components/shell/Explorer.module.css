@@ -1,0 +1,129 @@
+.explorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: var(--space-4);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.heading {
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+.list {
+  display: grid;
+  gap: 1px;
+}
+
+.row {
+  --indent: calc(var(--depth, 0) * 16px);
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding-left: calc(var(--space-3) + var(--indent));
+  padding-right: var(--space-2);
+}
+
+.toggle,
+.spacer {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.toggle {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.toggle:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.toggle:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.link {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.link:hover {
+  background: var(--color-hover);
+  color: var(--color-text);
+}
+
+.link:focus-visible {
+  outline-offset: -2px;
+}
+
+.link[aria-current='page'] {
+  background: var(--color-active);
+  color: var(--color-text);
+}
+
+.link[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-1));
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+}
+
+.icon {
+  color: var(--color-text-muted);
+}
+
+.link[aria-current='page'] .icon,
+.row[data-contains-current] .icon {
+  color: var(--color-accent);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
