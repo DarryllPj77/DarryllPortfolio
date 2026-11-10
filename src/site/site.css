@@ -1,0 +1,101 @@
+/*
+ * Page CSS: only what sits inside a visual and the kit lacks (system.md, layout-v4.md).
+ * Everything else comes from the design-taste-frontend kit in public/assets.
+ */
+
+/* React's mount point takes no box, so the page shell is body > header.nav, main, footer.closing (layout-v4.md) */
+#root { display: contents; }
+
+/* the dealt mark inline in the centred hero's h1, sized to the letters */
+.hero__mark { display: inline-block; width: .8em; height: .8em; vertical-align: -.06em; fill: currentColor; }
+
+/* the hero's ground keeps the page's one button pair: the blue primary and the white secondary */
+.hero.bg-field { --action: var(--p-action); --action-ink: var(--p-action-ink); }
+.hero.bg-field .btn--secondary { background: var(--p-bg); color: var(--p-ink); }
+
+/* the hero window holds Academic Sentinel's real console, top-aligned so the log feed reads above the fade */
+.hero__shot { border-radius: var(--r-md); overflow: hidden; box-shadow: 0 0 0 1px var(--line); background: var(--bg); }
+.hero__shot img { display: block; width: 100%; height: auto; }
+
+/* split-text-left: the screenshot at its true width, cut by the frame's right and bottom; a shorter frame at the
+   tablet so the stacked section stays one screen (layout-v4.md: 832 to 1,130px, cut to one screen) */
+@media (min-width: 640px) and (max-width: 1023px) { #work .frame--split { --ratio: 52%; } }
+.work__shot { --ax: 56px; --ay: 56px; width: 923px; height: auto; border-radius: var(--r-md); box-shadow: 0 0 0 1px var(--line); }
+@media (max-width: 639px) { .work__shot { --ax: 16px; --ay: 24px; } }
+.work__facts { display: grid; gap: var(--s-2); padding: 0; margin: 0; list-style: none; color: var(--ink); }
+
+/* the project cards share one panel height */
+#projects .panel { --p-h: 336px; }
+@media (max-width: 639px) { #projects .panel { --p-h: 240px; } }
+#projects .panel > .frame__img { object-position: 50% 50%; }
+
+/* the dark band: the avatar's figure fills its column */
+.about__avatar { display: grid; align-content: start; margin: 0; }
+
+/* the dealt bg-mist ground keeps the system's section box: its h2 at --padt, top-aligned, one screen at least
+   (backgrounds.css sets a demo section's padding, minimum height and centring, which a main > section must not take) */
+#skills { padding: var(--padt) 0 calc(var(--padb) + var(--bar)); align-content: start; --g-screen: calc(var(--h, 1) * 100svh); --hm: 2; }
+@media (max-width: 639px) { #skills { --g-screen: calc(var(--hm) * 100lvh); } }
+
+/* skills: the head row (words, then the stack diagram on the split line) over the groups, each a small box
+   from the left line to the right line, every row one height; on a phone the boxes open so the words sit on the left line */
+.skills__head { align-items: start; }
+.skills__stack { --p-h: 220px; }
+/* two text columns, on the left line and the split line (x 732 at 1440), as every split on the page */
+.skills__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5) var(--gutter); padding: 0; margin: var(--s-7) 0 0; list-style: none; }
+.skills__group { display: grid; gap: var(--s-2); align-content: start; }
+.skills__group > .t-label { color: var(--muted); }
+/* each tool as its real icon followed by its name, set inline so a group reads as one wrapped line of text */
+.skills__items { padding: 0; margin: 0; list-style: none; line-height: 2; }
+.skills__items > li { display: inline-block; margin-right: var(--s-4); white-space: nowrap; }
+.skills__items .ic { display: inline-block; width: 18px; height: 18px; margin-right: var(--s-2); vertical-align: -3px; object-fit: contain; }
+@media (max-width: 639px) {
+  .skills__stack { --p-h: 260px; margin-top: var(--s-6); }
+  .skills__grid { grid-template-columns: minmax(0, 1fr); margin-top: var(--s-6); }
+}
+/* At the tablet the stacked About and skills take two screens each, split as the kit's .g2 does: the words
+   (and the diagram) on the first, the picture or the groups on the second (layout-v4.md: two screens as two groups) */
+@media (min-width: 640px) and (max-width: 1023px) {
+  #about, #skills { --h: 2; }
+  #about > .wrap, #skills > .wrap { grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); row-gap: calc(var(--padt) + var(--padb) + var(--bar)); }
+  #about > .wrap > *, #skills > .wrap > * { grid-column: 1 / -1; align-self: start; }
+  #skills .skills__grid { margin-top: 0; }
+}
+
+/* the dealt bg-mist ground keeps the system's section box: its h2 at --padt, top-aligned, one screen at least
+   (backgrounds.css sets a demo section's padding, minimum height and centring, which a main > section must not take) */
+#skills { padding: var(--padt) 0 calc(var(--padb) + var(--bar)); align-content: start; --g-screen: calc(var(--h, 1) * 100svh); }
+@media (max-width: 639px) { #skills { --g-screen: calc(var(--hm, var(--h, 1)) * 100lvh); } }
+@media (min-width: 640px) and (max-width: 1023px) { #skills { --g-screen: calc(2 * 100svh); } }
+
+/* ---------------------------------------------------------------- the case-study sub-page */
+/* its opening screen: the text on the left five columns, the console on the split line */
+.hero--case .hero-text { align-content: start; }
+.case__hero { padding: 0; background: var(--surface); }
+.case__hero img { display: block; width: 100%; height: auto; }
+@media (max-width: 1023px) { .case__hero { margin-top: var(--s-6); } }
+
+/* screenshot groups: 4:3 frames on the column lines, each screen scaled to fit, never cropped */
+.shots { padding: 0; margin: 0; list-style: none; }
+.shots__frame { display: block; width: 100%; aspect-ratio: 4 / 3; padding: var(--s-4); border: 0;
+  background: var(--surface); cursor: zoom-in; overflow: hidden; }
+.shots__frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 639px) { .shots > li { grid-column: span 6; } .shots__frame { padding: var(--s-2); } }
+
+/* ---------------------------------------------------------------- the screenshot viewer */
+.lb { position: fixed; inset: 0; z-index: 100; display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  background: color-mix(in oklab, var(--p-inv-bg) 96%, transparent); color: var(--p-inv-ink);
+  animation: lb-in var(--dur) var(--ease); }
+@keyframes lb-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .lb { animation: none; } }
+.lb__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4); }
+.lb__label { display: flex; gap: var(--s-3); font-size: var(--t-small); }
+.lb__label .muted { color: var(--p-inv-muted); }
+.lb__stage { display: grid; place-items: center; min-height: 0; padding: var(--s-5) var(--s-4); overflow: auto; }
+.lb__img { display: block; width: auto; height: auto; max-width: min(100%, var(--w)); max-height: calc(100svh - 180px); }
+.lb__nav { display: flex; justify-content: center; gap: var(--s-3); padding: var(--s-3) var(--s-4) var(--s-5); }
+.lb__btn { width: var(--btn-h); padding: 0; justify-content: center; }
+
+/* "Say hi" is a button set in the page's one link look (a third button fill on the dark band would break the pair) */
+.avatar__wave { min-height: var(--btn-h); padding: 0; border: 0; background: none; font: inherit; color: var(--ink); cursor: pointer; }
+.avatar__wave[aria-disabled='true'] { color: var(--muted); cursor: default; }

@@ -18,7 +18,7 @@ export function AvatarFallback({ label }: { label: string }) {
         width={posterSize.width}
         height={posterSize.height}
         decoding="async"
-        fetchPriority="high"
+        loading="lazy"
       />
     );
   }

@@ -31,7 +31,7 @@ export interface AvatarConfig {
   mode: AvatarMode;
   /** Path under /public. The file is used exactly as supplied. */
   modelUrl: string | null;
-  /** Still render of the model, shown instantly and as the fallback. None yet. */
+  /** Still render of the model on the About band's #111 ground (cropped from a 1440 capture), shown first and as the fallback. */
   posterUrl: string | null;
   /** Intrinsic poster size, so the slot never shifts while it loads. */
   posterSize: { width: number; height: number };
@@ -40,12 +40,15 @@ export interface AvatarConfig {
   /** Name of the joint that turns toward the pointer, and its parent for the torso share. */
   joints: { head: string; torso: string };
   framing: {
-    /** Portrait slot (desktop and tablet): from mid-thigh up. */
+    /** Wide desktops (1280 and up): from mid-thigh up, room on the left for the wave. */
     portrait: AvatarFraming;
-    /** Square slot (stacked layout: tablets and phones): closer framing. */
+    /** 640 to 1279, beside the About text: a narrow extension so the canvas stays off the words. */
+    mid: AvatarFraming;
+    /** Phones, stacked under the text: a square slot with the closer framing. */
     compact: AvatarFraming;
   };
-  /** When the compact framing applies. Matches the square slot in Avatar.module.css. */
+  /** When the mid and compact framings apply. */
+  midQuery: string;
   compactQuery: string;
   /** Vertical field of view in degrees. Narrow, for a flat, portrait-like look. */
   fov: number;
@@ -54,17 +57,19 @@ export interface AvatarConfig {
 export const avatarConfig: AvatarConfig = {
   mode: 'scene',
   modelUrl: '/models/darryll-avatar.glb',
-  posterUrl: null,
-  posterSize: { width: 800, height: 1000 },
+  posterUrl: '/models/darryll-avatar-poster.jpg',
+  posterSize: { width: 628, height: 520 },
   clips: { idle: ['Idle'], wave: ['Wave'], neutral: ['Neutral'] },
   joints: { head: 'Head', torso: 'Torso' },
   // Reach measured from the clips: Idle ±0.79 m, Wave reaches 1.18 m to the
   // figure's right (screen left). Values include a small margin.
   framing: {
-    portrait: { bottom: 0.3, top: 2.12, reach: { left: 1.24, right: 0.8 }, bleed: 0.3, yaw: -0.24 },
+    portrait: { bottom: 0.3, top: 2.12, reach: { left: 1.24, right: 0.8 }, bleed: 0.2, yaw: -0.24 },
+    mid: { bottom: 0.6, top: 2.1, reach: { left: 1.24, right: 0.8 }, bleed: 0.1, yaw: -0.18 },
     compact: { bottom: 0.6, top: 2.1, reach: { left: 1.24, right: 0.8 }, bleed: 0.25, yaw: -0.12 },
   },
-  compactQuery: '(max-width: 900px)',
+  midQuery: '(min-width: 640px) and (max-width: 1279px)',
+  compactQuery: '(max-width: 639px)',
   fov: 26,
 };
 

@@ -1,11 +1,11 @@
 /*
- * The avatar sits directly on the page: no card, border or panel. A thin
- * ground line (part of the construction-grid language) crops the figure at
- * the waist, so it reads as rising from the layout rather than boxed in.
+ * The avatar stands straight on the section's ground: no card, box or rule
+ * (the kit allows no hairlines inside a section). Tokens are the kit's
+ * (public/assets/system.css): --s-*, --ink, --muted, --line, --dur, --ease.
  */
 .avatar {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--s-4);
   width: 100%;
 }
 
@@ -20,25 +20,30 @@
 .scene {
   position: absolute;
   inset: 0;
-  transition: opacity var(--dur) var(--ease-out);
+  transition: opacity var(--dur) var(--ease);
 }
 
 /*
- * The scene fades in over the poster once its first frame has rendered.
+ * The scene fades in over the fallback once its first frame has rendered.
  * Its canvas extends left of the slot by --bleed (set from the framing) so the
  * waving hand has room; the camera keeps the figure centred in the slot.
+ * It draws only: the slot itself receives pointer input.
  */
 .scene {
   left: calc(var(--bleed, 0) * -100%);
   opacity: 0;
+  pointer-events: none;
 }
 
 .slot[data-scene-ready] .scene {
   opacity: 1;
 }
 
+/* once faded, the fallback is hidden too, so nothing reads it as a blank picture behind the canvas */
 .slot[data-scene-ready] .poster {
   opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur) var(--ease), visibility 0s linear var(--dur);
 }
 
 .posterImage {
@@ -59,35 +64,12 @@
 
 .silhouette svg {
   display: block;
-  width: 78%;
+  width: 70%;
   max-height: 100%;
-  fill: var(--color-panel);
-  stroke: var(--color-border);
+  fill: var(--surface);
+  stroke: var(--line);
   stroke-width: 1.25;
   vector-effect: non-scaling-stroke;
-}
-
-/* Ground line: full width, fading out at both ends. */
-.ground {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--color-border) 18%,
-    var(--color-border) 82%,
-    transparent
-  );
-  pointer-events: none;
-}
-
-
-/* The scene draws only; the slot itself receives pointer input. */
-.scene {
-  pointer-events: none;
 }
 
 /* Interactive once the 3D avatar is showing: drag sideways to turn, tap to wave.
@@ -109,41 +91,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
-  min-height: 44px;
-  font-family: var(--font-mono);
-  font-size: var(--fs-xs);
-  color: var(--color-text-muted);
-}
-
-.wave {
-  min-height: 44px;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  font: inherit;
-  color: var(--color-text);
-  cursor: pointer;
-  transition:
-    border-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out);
-}
-
-.wave:hover {
-  border-color: var(--color-accent-line);
-  color: var(--color-accent);
-}
-
-.wave[aria-disabled='true'] {
-  color: var(--color-text-muted);
-  cursor: default;
+  gap: var(--s-4);
+  min-height: var(--btn-h);
+  font-size: var(--t-small);
+  color: var(--muted);
 }
 
 /* Stacked layout (tablets and phones): a square slot with the closer framing. */
 @media (max-width: 900px) {
   .slot {
     aspect-ratio: 1 / 1;
+    max-height: none;
   }
 }
 

@@ -1,10 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
-import { MotionGlobalConfig } from 'motion/react';
 import { afterEach, beforeEach } from 'vitest';
-
-// Finish animations instantly so tests don't wait on transitions.
-MotionGlobalConfig.skipAnimations = true;
 
 /** jsdom has no layout engine; evaluate min/max-width queries against innerWidth. */
 function matches(query: string): boolean {

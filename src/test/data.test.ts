@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { certifications, formatMonth, isActive } from '../data/certifications';
-import { explorerTree, getViewMeta } from '../data/navigation';
 import { profile } from '../data/profile';
 import { projects } from '../data/projects';
 import { skillGroups } from '../data/skills';
@@ -39,25 +38,6 @@ describe('portfolio data', () => {
     const blob = JSON.stringify({ profile, projects, skillGroups, socials, certifications });
     expect(blob).not.toMatch(/(\+63|\b09\d{2})[\s-]?\d{3}[\s-]?\d{4}/);
     expect(blob).not.toMatch(/tel:/);
-  });
-
-  it('builds the Explorer tree from project data', () => {
-    const projectsNode = explorerTree.find((n) => n.id === 'projects');
-    expect(projectsNode?.kind).toBe('folder');
-    if (projectsNode?.kind !== 'folder') return;
-    expect(projectsNode.children.map((c) => c.name)).toEqual([
-      'AcademicSentinel.cs',
-      'PreMatchTracker.jsx',
-      'SpendSync.js',
-    ]);
-    expect(projectsNode.children.map((c) => c.path)).toEqual(
-      projects.map((p) => `/projects/${p.slug}`),
-    );
-  });
-
-  it('resolves view metadata, including unknown paths', () => {
-    expect(getViewMeta('/projects/spendsync/').title).toBe('SpendSync');
-    expect(getViewMeta('/nope').known).toBe(false);
   });
 
   it('formats and evaluates certification dates', () => {

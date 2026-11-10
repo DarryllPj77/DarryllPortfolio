@@ -1,10 +1,6 @@
-import { motion } from 'motion/react';
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { ProjectScreenshot } from '../../data/types';
-import { duration, ease } from '../../motion/tokens';
-import { Icon } from '../ui/Icon';
-import styles from './Gallery.module.css';
 
 interface LightboxProps {
   shots: ProjectScreenshot[];
@@ -15,7 +11,7 @@ interface LightboxProps {
   onClose: () => void;
 }
 
-/** While the viewer is open, the rest of the app can't be focused or read. */
+/** While the viewer is open, the rest of the page can't be focused or read. */
 function useModalBackground() {
   useEffect(() => {
     const root = document.getElementById('root');
@@ -31,10 +27,18 @@ function useModalBackground() {
   }, []);
 }
 
+const icon = (d: string) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <path d={d} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 /**
  * Full-screen screenshot viewer. Shows screenshots at their real size (never
- * enlarged past it), with previous/next within one group. Keyboard: arrow
- * keys to move, Escape to close; Tab stays inside the viewer.
+ * enlarged past it), with previous/next within one group. Keyboard: arrow keys
+ * to move, Escape to close; Tab stays inside the viewer. No caption under the
+ * picture (the skill's house rule 1): the group's name and the position sit in
+ * the bar, and the alt text describes the screen.
  */
 export function Lightbox({ shots, index, label, onIndexChange, onClose }: LightboxProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -74,84 +78,58 @@ export function Lightbox({ shots, index, label, onIndexChange, onClose }: Lightb
   };
 
   return createPortal(
-    <motion.div
+    <div
       ref={dialogRef}
-      className={styles.lightbox}
+      className="lb"
       role="dialog"
       aria-modal="true"
       aria-label={`${label} screenshots`}
       onKeyDown={onKeyDown}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: duration.exit } }}
-      transition={{ duration: duration.fast, ease: ease.out }}
     >
-      <div className={styles.lbBar}>
-        <p className={styles.lbLabel}>
+      <div className="lb__bar wrap">
+        <p className="lb__label">
           {label}
           {hasSiblings ? (
-            <span className={styles.lbCount} aria-live="polite">
-              {index + 1} / {count}
+            <span className="muted" aria-live="polite">
+              {index + 1} of {count}
             </span>
           ) : null}
         </p>
-        <button
-          ref={closeRef}
-          type="button"
-          className={styles.lbButton}
-          onClick={onClose}
-          aria-label="Close screenshot viewer"
-        >
-          <Icon name="close" size={18} />
+        <button ref={closeRef} type="button" className="btn btn--secondary lb__btn" onClick={onClose} aria-label="Close screenshot viewer">
+          {icon('M6 6l12 12M18 6 6 18')}
         </button>
       </div>
 
       {/* Clicking the empty area around the screenshot closes the viewer. */}
       <div
-        className={styles.lbStage}
+        className="lb__stage"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        <figure className={styles.lbFigure}>
-          <motion.img
-            key={shot.src}
-            className={styles.lbImage}
-            src={shot.src}
-            alt={shot.alt}
-            width={shot.width}
-            height={shot.height}
-            decoding="async"
-            style={{ '--w': `${shot.width}px` } as CSSProperties}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: duration.fast, ease: ease.out }}
-          />
-          <figcaption className={styles.lbCaption}>{shot.caption}</figcaption>
-        </figure>
+        <img
+          key={shot.src}
+          className="lb__img"
+          src={shot.src}
+          alt={shot.alt}
+          width={shot.width}
+          height={shot.height}
+          decoding="async"
+          style={{ '--w': `${shot.width}px` } as CSSProperties}
+        />
       </div>
 
       {hasSiblings ? (
-        <div className={styles.lbNav}>
-          <button
-            type="button"
-            className={styles.lbButton}
-            onClick={() => go(-1)}
-            aria-label="Previous screenshot"
-          >
-            <Icon name="arrow-left" size={18} />
+        <div className="lb__nav">
+          <button type="button" className="btn btn--secondary lb__btn" onClick={() => go(-1)} aria-label="Previous screenshot">
+            {icon('M15 6l-6 6 6 6')}
           </button>
-          <button
-            type="button"
-            className={styles.lbButton}
-            onClick={() => go(1)}
-            aria-label="Next screenshot"
-          >
-            <Icon name="arrow-right" size={18} />
+          <button type="button" className="btn btn--secondary lb__btn" onClick={() => go(1)} aria-label="Next screenshot">
+            {icon('M9 6l6 6-6 6')}
           </button>
         </div>
       ) : null}
-    </motion.div>,
+    </div>,
     document.body,
   );
 }

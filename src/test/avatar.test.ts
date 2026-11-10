@@ -105,7 +105,8 @@ describe('avatar framing', () => {
 
   it.each([
     ['desktop', avatarConfig.framing.portrait, 455, 437],
-    ['tablet', avatarConfig.framing.compact, 450, 360],
+    ['1024 desktop', avatarConfig.framing.mid, 475, 520],
+    ['tablet', avatarConfig.framing.mid, 363, 330],
     ['phone', avatarConfig.framing.compact, 325, 260],
   ])('keeps the full reach (including the wave) in frame on %s', (_, framing, w, h) => {
     const v = visible(framing, w, h);

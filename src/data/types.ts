@@ -128,6 +128,11 @@ export interface SkillItem {
   name: string;
   /** Shown next to the skill when the experience is limited, e.g. "fundamentals". */
   qualifier?: string;
+  /**
+   * The tool's real logo, a file name in /assets/icons written by the skill's icons.mjs.
+   * Left out where no licensed mark exists (WPF, Blazor, EF Core): the name stands alone.
+   */
+  icon?: string;
 }
 
 export interface SkillGroup {

@@ -1,9 +1,7 @@
-import { useReducedMotion } from 'motion/react';
 import { lazy, Suspense, useCallback, useRef, useState, type CSSProperties } from 'react';
 import { useAvatarCapability } from '../../hooks/useAvatarCapability';
 import { useInView } from '../../hooks/useInView';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { useIntro } from '../../intro/introContext';
 import { avatarConfig } from './avatar.config';
 import { AvatarErrorBoundary } from './AvatarErrorBoundary';
 import { AvatarFallback } from './AvatarFallback';
@@ -13,19 +11,20 @@ import { useAvatarInteraction } from './useAvatarInteraction';
 const AvatarScene = lazy(() => import('./AvatarScene'));
 
 /**
- * The avatar area in the Home hero. The fallback always renders first; the 3D
- * scene is layered on top only when this device gets it, the hero is near the
- * viewport and the intro has finished. Once the scene has drawn its first
- * frame it fades in over the fallback. If anything fails, the fallback stays.
+ * The avatar in the About section. The fallback always renders first; the 3D
+ * scene is layered on top only when this device gets it and the section is near
+ * the viewport. Once the scene has drawn its first frame it fades in over the
+ * fallback. If anything fails, the fallback stays.
  */
 export function AvatarSlot() {
   const ref = useRef<HTMLDivElement>(null);
   const mode = useAvatarCapability();
   const inView = useInView(ref);
-  const intro = useIntro();
-  const reducedMotion = useReducedMotion() ?? false;
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const mid = useMediaQuery(avatarConfig.midQuery);
   const compact = useMediaQuery(avatarConfig.compactQuery);
-  const framing = compact ? avatarConfig.framing.compact : avatarConfig.framing.portrait;
+  const { framing: f } = avatarConfig;
+  const framing = compact ? f.compact : mid ? f.mid : f.portrait;
   const [requested, setRequested] = useState(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -34,7 +33,7 @@ export function AvatarSlot() {
 
   const sceneOn = mode === 'scene' && !failed;
   // Start loading once; the scene pauses itself when scrolled away.
-  if (sceneOn && inView && !intro.active && !requested) setRequested(true);
+  if (sceneOn && inView && !requested) setRequested(true);
 
   const showScene = sceneOn && requested;
   const live = showScene && ready;
@@ -56,7 +55,7 @@ export function AvatarSlot() {
       >
         <div className={styles.poster}>
           <AvatarFallback
-            label={sceneOn ? '3D avatar of Darryll' : 'Illustration standing in for Darryll’s 3D avatar'}
+            label={sceneOn ? '3D avatar of Darryll' : 'Still image of Darryll’s 3D avatar: a figure in amber glasses and a yellow plaid shirt'}
           />
         </div>
         {showScene ? (
@@ -79,14 +78,13 @@ export function AvatarSlot() {
             </AvatarErrorBoundary>
           </div>
         ) : null}
-        <span className={styles.ground} aria-hidden="true" />
       </div>
 
       {live ? (
         <div className={styles.controls}>
           <button
             type="button"
-            className={styles.wave}
+            className="link avatar__wave"
             onClick={wave}
             // aria-disabled rather than disabled, so keyboard focus stays on the button.
             aria-disabled={state === 'waving'}
