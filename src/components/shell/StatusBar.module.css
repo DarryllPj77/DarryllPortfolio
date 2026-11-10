@@ -42,3 +42,20 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Show or hide the avatar companion: a quiet text switch, like a status bar item in an editor. */
+.toggle {
+  height: var(--statusbar-h);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.toggle:hover,
+.toggle:focus-visible {
+  color: var(--color-text);
+}

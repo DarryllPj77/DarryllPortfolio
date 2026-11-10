@@ -16,29 +16,33 @@
   max-height: 520px;
 }
 
-.poster,
-.scene {
+.poster {
   position: absolute;
   inset: 0;
   transition: opacity var(--dur) var(--ease-out);
 }
 
-/*
- * The scene fades in over the poster once its first frame has rendered.
- * Its canvas extends left of the slot by --bleed (set from the framing) so the
- * waving hand has room; the camera keeps the figure centred in the slot.
- */
-.scene {
-  left: calc(var(--bleed, 0) * -100%);
+/* The 3D avatar (rendered by the companion) fades in over the poster once its first frame has drawn. */
+.slot[data-scene-ready] .poster,
+.slot[data-away] .poster {
   opacity: 0;
 }
 
-.slot[data-scene-ready] .scene {
-  opacity: 1;
+/* Where the companion stands the 3D avatar while it is large. */
+.mount {
+  position: absolute;
+  inset: 0;
 }
 
-.slot[data-scene-ready] .poster {
-  opacity: 0;
+/* Shown while the avatar roams the workspace. */
+.away {
+  position: absolute;
+  inset: auto 0 var(--space-6);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 .posterImage {
@@ -84,24 +88,6 @@
   pointer-events: none;
 }
 
-
-/* The scene draws only; the slot itself receives pointer input. */
-.scene {
-  pointer-events: none;
-}
-
-/* Interactive once the 3D avatar is showing: drag sideways to turn, tap to wave.
-   Vertical swipes still scroll the page on touch screens. */
-.slot[data-scene-ready] {
-  cursor: grab;
-  touch-action: pan-y;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.slot[data-state='dragging'] {
-  cursor: grabbing;
-}
 
 /* One row under the avatar; the same height while loading and when ready, so nothing shifts. */
 .controls,

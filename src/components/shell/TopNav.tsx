@@ -19,6 +19,7 @@ export function TopNav({ meta }: { meta: ViewMeta }) {
                 to={section.path}
                 className={styles.navLink}
                 aria-current={exact ? 'page' : active ? 'true' : undefined}
+                data-companion={section.path}
               >
                 {section.label}
                 {active ? (

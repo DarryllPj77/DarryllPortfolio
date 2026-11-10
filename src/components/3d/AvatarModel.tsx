@@ -13,7 +13,14 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { avatarConfig } from './avatar.config';
-import { clamp, LIMITS, type AvatarInput, type AvatarState } from './avatarInteraction';
+import {
+  clamp,
+  HOLD_MS,
+  LIMITS,
+  LOOK_AROUND_SECONDS,
+  type AvatarInput,
+  type AvatarState,
+} from './avatarInteraction';
 
 /** Crossfade times in seconds; match the site's motion tokens (base 0.3s). */
 const FADE_IN = 0.3;
@@ -21,6 +28,8 @@ const FADE_OUT = 0.45;
 /** How quickly offsets settle (higher = faster). Gentle, never snappy. */
 const DAMP_TRACK = 4;
 const DAMP_RETURN = 3.5;
+/** How quickly companion gestures (talk, look around, float) fade in and out. */
+const DAMP_GESTURE = 5;
 /**
  * Longest step the animation takes in one frame. Large enough that slow devices
  * (20–30 fps) still animate at real speed; small enough that resuming after a
@@ -98,7 +107,17 @@ export default function AvatarModel({
   }, [gltf]);
 
   // Smoothed offsets, kept outside React state so frames never re-render.
-  const motion = useRef({ yaw: restYaw, headYaw: 0, headPitch: 0, started: false });
+  const motion = useRef({
+    yaw: restYaw,
+    headYaw: 0,
+    headPitch: 0,
+    talk: 0,
+    look: 0,
+    float: 0,
+    lean: 0,
+    lift: 0,
+    started: false,
+  });
   const current = useRef<AnimationAction | undefined>(undefined);
 
   /** The pose to rest in: Idle normally, the still Neutral pose with reduced motion. */
@@ -167,15 +186,43 @@ export default function AvatarModel({
       m.headYaw = MathUtils.damp(m.headYaw, targetYaw, DAMP_TRACK, delta);
       m.headPitch = MathUtils.damp(m.headPitch, targetPitch, DAMP_TRACK, delta);
     }
-    addRotation(rig.torso, 0, m.headYaw * LIMITS.torsoShare);
-    addRotation(rig.head, m.headPitch, m.headYaw * (1 - LIMITS.torsoShare));
+    // Companion gestures, eased in and out by a weight so they never snap:
+    // talking nods and sways a little; looking around sweeps the head left, then right.
+    const still = reducedMotion;
+    m.talk = MathUtils.damp(m.talk, state === 'talking' && !still ? 1 : 0, DAMP_GESTURE, delta);
+    m.look = MathUtils.damp(m.look, state === 'lookingAround' && !still ? 1 : 0, DAMP_GESTURE, delta);
+    m.float = MathUtils.damp(m.float, state === 'moving' && !still ? 1 : 0, DAMP_GESTURE, delta);
+    const since = (performance.now() - input.current.activityStart) / 1000;
+    const look = clamp(since / LOOK_AROUND_SECONDS, 0, 1);
+    const gestureYaw =
+      m.talk * Math.sin(since * 1.6) * 0.06 +
+      m.look * Math.sin(look * Math.PI * 2) * Math.sin(look * Math.PI) * 0.45;
+    const gesturePitch = m.talk * (Math.sin(since * 7.5) * 0.05 + Math.sin(since * 3.3) * 0.03);
 
-    // 3. Whole-avatar rotation: follows the drag directly, then eases back to rest.
+    addRotation(rig.torso, 0, m.headYaw * LIMITS.torsoShare + gestureYaw * 0.25);
+    addRotation(rig.head, m.headPitch + gesturePitch, m.headYaw * (1 - LIMITS.torsoShare) + gestureYaw);
+
+    // 3. Whole-avatar rotation: follows the drag directly, turns toward where it travels,
+    //    then eases back to rest. While travelling it also floats and leans slightly.
     const dragging = state === 'dragging';
-    const targetBody = restYaw + (dragging ? input.current.dragYaw : 0);
+    const travel = state === 'moving' && !still ? input.current.travelDir : 0;
+    const targetBody =
+      restYaw + (dragging ? input.current.dragYaw : 0) + travel * LIMITS.travelYaw;
     m.yaw =
       dragging || reducedMotion ? targetBody : MathUtils.damp(m.yaw, targetBody, DAMP_RETURN, delta);
-    if (group.current) group.current.rotation.y = m.yaw;
+    m.lean = MathUtils.damp(m.lean, -travel * 0.06, DAMP_GESTURE, delta);
+    // Held to wake the companion: rises slowly off the ground, trembling a little near the end.
+    const holdStart = input.current.holdStart;
+    const charge = holdStart && !still ? clamp((performance.now() - holdStart) / HOLD_MS, 0, 1) : 0;
+    m.lift = charge > m.lift ? charge : MathUtils.damp(m.lift, 0, DAMP_RETURN, delta);
+    if (group.current) {
+      group.current.rotation.y = m.yaw;
+      group.current.rotation.z = m.lean;
+      group.current.position.y =
+        m.float * Math.sin(performance.now() / 160) * 0.03 +
+        m.lift * 0.16 +
+        m.lift * m.lift * Math.sin(performance.now() / 45) * 0.006;
+    }
 
     if (!m.started) {
       m.started = true;

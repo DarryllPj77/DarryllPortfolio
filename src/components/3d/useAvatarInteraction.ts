@@ -3,10 +3,18 @@ import {
   useEffect,
   useRef,
   useState,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { clamp, createAvatarInput, LIMITS, resolveAvatarState } from './avatarInteraction';
+import {
+  clamp,
+  createAvatarInput,
+  HOLD_MS,
+  LIMITS,
+  resolveAvatarState,
+  type CompanionActivity,
+} from './avatarInteraction';
 
 /** Movement (px) before a press counts as a drag rather than a click. */
 const DRAG_THRESHOLD = 6;
@@ -19,23 +27,45 @@ interface Options {
   /** True once the 3D avatar is showing. */
   enabled: boolean;
   reducedMotion: boolean;
+  /** What the workspace companion is doing (moving, talking, looking around). */
+  activity?: CompanionActivity;
+  /**
+   * When set, holding the avatar still for HOLD_MS calls this (the large Home
+   * avatar "wakes up" into the workspace companion). Dragging still turns it.
+   */
+  onAwaken?: () => void;
 }
 
 /**
  * DOM-side input for the avatar: pointer tracking (mouse/trackpad only),
- * horizontal drag to turn it, and click/tap to wave. Pointer positions go into
- * a mutable object read by the canvas each frame; only state changes
- * (start/stop dragging, waving, tracking) re-render.
+ * drag to turn it, a 3-second hold to wake the companion, and click/tap to
+ * wave. Pointer positions go into a mutable object read by the canvas each
+ * frame; only state changes re-render.
  */
-export function useAvatarInteraction({ target, enabled, reducedMotion }: Options) {
+export function useAvatarInteraction({
+  target,
+  enabled,
+  reducedMotion,
+  activity = null,
+  onAwaken,
+}: Options) {
   const input = useRef(createAvatarInput());
   const [dragging, setDragging] = useState(false);
   const [waving, setWaving] = useState(false);
   const [pointerActive, setPointerActive] = useState(false);
   const [waveId, setWaveId] = useState(0);
-  const press = useRef<{ id: number; startX: number; moved: boolean } | null>(null);
+  const press = useRef<{ id: number; startX: number; startY: number; moved: boolean } | null>(
+    null,
+  );
+  const holdTimer = useRef<number | undefined>(undefined);
+  /** Where a hold that may wake the companion started (for the progress ring), or null. */
+  const [hold, setHold] = useState<{ x: number; y: number } | null>(null);
+  const awaken = useRef(onAwaken);
+  useEffect(() => {
+    awaken.current = onAwaken;
+  }, [onAwaken]);
 
-  const state = resolveAvatarState({ dragging, waving, pointerActive });
+  const state = resolveAvatarState({ dragging, waving, pointerActive, activity });
 
   const wave = useCallback(() => {
     if (!enabled || dragging || waving) return;
@@ -75,21 +105,46 @@ export function useAvatarInteraction({ target, enabled, reducedMotion }: Options
     };
   }, [enabled, reducedMotion, target, input]);
 
+  const clearHold = () => {
+    window.clearTimeout(holdTimer.current);
+    holdTimer.current = undefined;
+    input.current.holdStart = 0;
+    setHold(null);
+  };
+
+  useEffect(() => () => window.clearTimeout(holdTimer.current), []);
+
   const endPress = () => {
+    clearHold();
     press.current = null;
     setDragging(false);
+  };
+
+  /** Hands the press over to the companion: no wave or turn follows. */
+  const wake = () => {
+    endPress();
+    awaken.current?.();
   };
 
   const handlers = {
     onPointerDown(e: ReactPointerEvent<HTMLElement>) {
       if (!enabled || waving || e.button !== 0) return;
-      press.current = { id: e.pointerId, startX: e.clientX, moved: false };
+      press.current = { id: e.pointerId, startX: e.clientX, startY: e.clientY, moved: false };
+      if (awaken.current) {
+        input.current.holdStart = performance.now();
+        setHold({ x: e.clientX, y: e.clientY });
+        holdTimer.current = window.setTimeout(wake, HOLD_MS);
+      }
     },
     onPointerMove(e: ReactPointerEvent<HTMLElement>) {
       const p = press.current;
       if (!p || p.id !== e.pointerId) return;
       const dx = e.clientX - p.startX;
-      if (!p.moved && Math.abs(dx) > DRAG_THRESHOLD) {
+      const dy = e.clientY - p.startY;
+      if (!p.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+        // Moving cancels a hold; a sideways move becomes a drag to turn.
+        clearHold();
+        if (Math.abs(dx) <= DRAG_THRESHOLD) return;
         p.moved = true;
         setDragging(true);
         // Keep receiving moves if the pointer leaves the slot. Best effort: it
@@ -115,7 +170,11 @@ export function useAvatarInteraction({ target, enabled, reducedMotion }: Options
     onLostPointerCapture: () => {
       if (press.current?.moved) endPress();
     },
+    // A long press on touch screens would otherwise open the browser's image menu.
+    onContextMenu(e: ReactMouseEvent<HTMLElement>) {
+      if (awaken.current) e.preventDefault();
+    },
   };
 
-  return { state, input, waveId, wave, onWaveEnd, handlers };
+  return { state, input, waveId, wave, onWaveEnd, handlers, hold };
 }

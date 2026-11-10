@@ -13,6 +13,8 @@ function CameraRig({ framing }: { framing: AvatarFraming }) {
   const { width, height } = useThree((s) => s.size);
 
   useLayoutEffect(() => {
+    // A detached canvas (the companion off the page) reports no size; keep the last framing.
+    if (width === 0 || height === 0) return;
     const { camera: cam, invalidate } = get();
     const camera = cam as PerspectiveCamera;
     const { centerX, centerY, distance } = frameCamera(framing, width, height, camera.fov);

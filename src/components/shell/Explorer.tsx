@@ -87,6 +87,7 @@ function FolderRow({
         aria-expanded={open}
         aria-controls={groupId}
         onClick={() => setOpen(!open)}
+        data-companion={`/${folder.id}`}
         data-contains-current={containsActive || undefined}
       >
         <Icon name={open ? 'chevron-down' : 'chevron-right'} size={14} className={styles.chevron} />
@@ -129,6 +130,7 @@ function FileRow({
       aria-current={active ? 'page' : undefined}
       title={file.title}
       onClick={onNavigate}
+      data-companion={`${file.path}${file.hash ?? ''}`}
     >
       <Icon name={file.icon} size={16} className={styles.fileIcon} />
       <span className={styles.label}>{file.name}</span>
