@@ -24,7 +24,7 @@ import { useIntro } from '../../intro/introContext';
 import { duration, ease } from '../../motion/tokens';
 import { avatarConfig } from '../3d/avatar.config';
 import { AvatarErrorBoundary } from '../3d/AvatarErrorBoundary';
-import { HOLD_MS, LOOK_AROUND_SECONDS, type CompanionActivity } from '../3d/avatarInteraction';
+import { LOOK_AROUND_SECONDS, type CompanionActivity } from '../3d/avatarInteraction';
 import { useAvatarInteraction } from '../3d/useAvatarInteraction';
 import { Icon } from '../ui/Icon';
 import { roamBounds } from './companionBounds';
@@ -86,8 +86,8 @@ const snapshot = ({ left, top, right, bottom, width, height }: RectLike): RectLi
  * The avatar companion. One 3D canvas for the whole site:
  *
  * - **hero**: large, standing in the Home hero's avatar spot (registered by AvatarSlot).
- * - **mini**: after a 3-second hold (or "Explore with me"), it shrinks and pops up right
- *   where it stands, ready at once. Clicking a file in the Explorer or a top nav link
+ * - **mini**: after "Explore with me" (or "Show avatar" in the status bar), it shrinks and
+ *   pops up right where it stands, ready at once. Clicking a file in the Explorer or a top nav link
  *   sends it there to say something about it; clicking empty workspace sends it to
  *   that spot, where it looks around or waves. It never follows the cursor.
  *
@@ -161,7 +161,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const bubbleId = useRef(0);
   const miniSize = useRef<Size>({ w: MINI_WIDTH, h: Math.round(MINI_WIDTH * 1.25) });
 
-  // The interaction hook needs `awaken` before it is defined below; this stays stable.
+  // A stable `awaken` for the context; it calls the latest version through the ref.
   const api = useRef<{ awaken: () => void; onClick: (e: MouseEvent) => void; keepInside: () => void }>(
     null!,
   );
@@ -172,7 +172,6 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     enabled: live && active,
     reducedMotion,
     activity,
-    onAwaken: mode === 'hero' && canRoam && live ? awakenProxy : undefined,
   });
 
   const visualBox = (): Point & Size => ({
@@ -463,18 +462,6 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       {createPortal(avatar, holder)}
       {createPortal(
         <>
-          {interaction.hold ? (
-            <span
-              className={styles.holdRing}
-              style={{ left: interaction.hold.x, top: interaction.hold.y }}
-              aria-hidden="true"
-            >
-              <svg viewBox="0 0 40 40">
-                <circle className={styles.holdTrack} cx="20" cy="20" r="17" />
-                <circle className={styles.holdFill} cx="20" cy="20" r="17" style={{ animationDuration: `${HOLD_MS}ms` }} />
-              </svg>
-            </span>
-          ) : null}
           <p className="visually-hidden" aria-live="polite">
             {bubble ? `${bubble.title}: ${bubble.text}` : ''}
           </p>

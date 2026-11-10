@@ -59,8 +59,6 @@ export interface AvatarInput {
   travelDir: number;
   /** When the current companion activity began (performance.now(), in ms). */
   activityStart: number;
-  /** When a hold to wake the companion began (performance.now(), in ms), or 0. */
-  holdStart: number;
 }
 
 export const createAvatarInput = (): AvatarInput => ({
@@ -68,7 +66,6 @@ export const createAvatarInput = (): AvatarInput => ({
   dragYaw: 0,
   travelDir: 0,
   activityStart: 0,
-  holdStart: 0,
 });
 
 /** Rotation limits, in radians. Kept small on purpose. */
@@ -83,9 +80,6 @@ export const LIMITS = {
   /** Body turn toward the direction of travel: about 34°. */
   travelYaw: 0.6,
 } as const;
-
-/** How long the large avatar must be held to wake the companion: deliberate, like an easter egg. */
-export const HOLD_MS = 3000;
 
 /** Length of the look-around after arriving at an empty spot, in seconds. */
 export const LOOK_AROUND_SECONDS = 1.8;

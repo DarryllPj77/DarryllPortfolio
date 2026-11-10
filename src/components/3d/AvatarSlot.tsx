@@ -55,7 +55,6 @@ export function AvatarSlot() {
               type="button"
               className={styles.wave}
               onClick={companion.awaken}
-              title="Or hold the avatar for 3 seconds"
             >
               Explore with me
             </button>

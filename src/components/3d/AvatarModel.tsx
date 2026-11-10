@@ -15,7 +15,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { avatarConfig } from './avatar.config';
 import {
   clamp,
-  HOLD_MS,
   LIMITS,
   LOOK_AROUND_SECONDS,
   type AvatarInput,
@@ -115,7 +114,6 @@ export default function AvatarModel({
     look: 0,
     float: 0,
     lean: 0,
-    lift: 0,
     started: false,
   });
   const current = useRef<AnimationAction | undefined>(undefined);
@@ -211,17 +209,10 @@ export default function AvatarModel({
     m.yaw =
       dragging || reducedMotion ? targetBody : MathUtils.damp(m.yaw, targetBody, DAMP_RETURN, delta);
     m.lean = MathUtils.damp(m.lean, -travel * 0.06, DAMP_GESTURE, delta);
-    // Held to wake the companion: rises slowly off the ground, trembling a little near the end.
-    const holdStart = input.current.holdStart;
-    const charge = holdStart && !still ? clamp((performance.now() - holdStart) / HOLD_MS, 0, 1) : 0;
-    m.lift = charge > m.lift ? charge : MathUtils.damp(m.lift, 0, DAMP_RETURN, delta);
     if (group.current) {
       group.current.rotation.y = m.yaw;
       group.current.rotation.z = m.lean;
-      group.current.position.y =
-        m.float * Math.sin(performance.now() / 160) * 0.03 +
-        m.lift * 0.16 +
-        m.lift * m.lift * Math.sin(performance.now() / 45) * 0.006;
+      group.current.position.y = m.float * Math.sin(performance.now() / 160) * 0.03;
     }
 
     if (!m.started) {

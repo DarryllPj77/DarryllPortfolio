@@ -35,7 +35,7 @@
   pointer-events: none;
 }
 
-/* Large, in the hero: drag or hold to wake it, tap to wave. */
+/* Large, in the hero: drag to turn it, tap to wave. */
 .box[data-mode='hero'] {
   cursor: grab;
 }
@@ -168,60 +168,5 @@
   .scene,
   .hide {
     transition: none;
-  }
-}
-
-/* Holding the large avatar: a ring fills around the pointer over the 3 seconds it takes to wake it. */
-.holdRing {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  margin: -20px 0 0 -20px;
-  pointer-events: none;
-  animation: ring-in var(--dur-fast) var(--ease-out);
-}
-
-.holdRing svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.holdTrack,
-.holdFill {
-  fill: none;
-  stroke-width: 2.5;
-}
-
-.holdTrack {
-  stroke: rgb(148 163 184 / 0.25);
-}
-
-/* Circumference of r = 17: 2π × 17 ≈ 106.8. */
-.holdFill {
-  stroke: var(--color-accent);
-  stroke-linecap: round;
-  stroke-dasharray: 106.8;
-  stroke-dashoffset: 106.8;
-  animation: ring-fill linear forwards;
-}
-
-@keyframes ring-fill {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes ring-in {
-  from {
-    opacity: 0;
-  }
-}
-
-/* The fill is the only sign the hold is working, so it keeps running; only the fade-in goes. */
-@media (prefers-reduced-motion: reduce) {
-  .holdRing {
-    animation: none;
   }
 }
