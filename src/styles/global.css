@@ -139,3 +139,18 @@ kbd {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------- Avatar destinations ----------------
+   Places Darryll's avatar can be sent to with "Move Darryll" (data-avatar-dock). The
+   avatar stands inside them, on their right edge, so they position it. */
+[data-avatar-dock] {
+  position: relative;
+}
+
+/* While the avatar is carried: no text selection, and the grabbing hand everywhere. */
+html[data-avatar-carrying],
+html[data-avatar-carrying] * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}

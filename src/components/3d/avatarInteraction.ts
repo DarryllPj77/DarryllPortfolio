@@ -2,30 +2,45 @@
  * Interaction state for the avatar. One state at a time, chosen by priority,
  * so nothing fights over the model:
  *
- *   dragging > waving > moving > talking > lookingAround > pointerTracking > idle
+ *   turning > waving > (companion activity) > pointerTracking > idle
  *
- * - dragging: the visitor rotates the avatar; head tracking eases to centre.
+ * - turning: the visitor rotates the large avatar with a sideways drag (phones only now).
  * - waving: the Wave clip plays.
- * - moving: the companion glides across the workspace, turned toward where it goes.
- * - talking: a speech bubble is open; a small nod and sway on top of Idle.
- * - lookingAround: a short head sweep after arriving at an empty spot.
+ * - companion activity, set by the workspace companion:
+ *   - grabbed: pressed and lifted, about to be carried.
+ *   - dragging: carried under the pointer; it floats, turns toward where it goes and leans.
+ *   - dropping: easing into a valid destination after release.
+ *   - settling: landed; a moment to come to rest before idle.
+ *   - returning: released somewhere invalid, going back to where it was.
+ *   - moving: gliding to a clicked file, link or empty spot.
+ *   - talking: a speech bubble is open; a small nod and sway on top of Idle.
+ *   - lookingAround: a short head sweep after arriving at an empty spot.
  * - pointerTracking: Idle clip plus a small head/torso turn toward the pointer.
  * - idle: Idle clip (or the still Neutral pose with reduced motion).
  */
-export type AvatarState =
-  | 'idle'
-  | 'pointerTracking'
+export type CompanionActivity =
+  | 'grabbed'
   | 'dragging'
-  | 'waving'
+  | 'dropping'
+  | 'settling'
+  | 'returning'
   | 'moving'
   | 'talking'
-  | 'lookingAround';
+  | 'lookingAround'
+  | null;
 
-/** What the workspace companion is doing, set by the companion rather than by pointer input. */
-export type CompanionActivity = 'moving' | 'talking' | 'lookingAround' | null;
+export type AvatarState = 'idle' | 'pointerTracking' | 'turning' | 'waving' | NonNullable<CompanionActivity>;
+
+/** Activities in which the avatar travels: it floats, leans and faces its direction. */
+export const TRAVELLING: ReadonlySet<AvatarState> = new Set([
+  'dragging',
+  'dropping',
+  'returning',
+  'moving',
+]);
 
 export interface AvatarFlags {
-  dragging: boolean;
+  turning: boolean;
   waving: boolean;
   /** A fine pointer (mouse/trackpad) is over the page and tracking is allowed. */
   pointerActive: boolean;
@@ -33,12 +48,12 @@ export interface AvatarFlags {
 }
 
 export function resolveAvatarState({
-  dragging,
+  turning,
   waving,
   pointerActive,
   activity = null,
 }: AvatarFlags): AvatarState {
-  if (dragging) return 'dragging';
+  if (turning) return 'turning';
   if (waving) return 'waving';
   if (activity) return activity;
   if (pointerActive) return 'pointerTracking';
@@ -55,10 +70,12 @@ export interface AvatarInput {
   pointer: { x: number; y: number };
   /** Horizontal drag rotation in radians, relative to the presentation angle. */
   dragYaw: number;
-  /** Direction of the current glide: -1 left, 1 right, 0 straight up or down. */
+  /** Direction of travel: -1 left, 1 right, 0 straight up or down (fractions while carried). */
   travelDir: number;
   /** When the current companion activity began (performance.now(), in ms). */
   activityStart: number;
+  /** When the Home introduction's entrance began (performance.now(), in ms); 0 when none. */
+  entranceStart: number;
 }
 
 export const createAvatarInput = (): AvatarInput => ({
@@ -66,6 +83,7 @@ export const createAvatarInput = (): AvatarInput => ({
   dragYaw: 0,
   travelDir: 0,
   activityStart: 0,
+  entranceStart: 0,
 });
 
 /** Rotation limits, in radians. Kept small on purpose. */
@@ -97,6 +115,6 @@ export function chooseFrameloop(
   state: AvatarState,
 ): 'always' | 'demand' | 'never' {
   if (!active) return 'never';
-  const moving = !reducedMotion || state === 'waving' || state === 'dragging';
+  const moving = !reducedMotion || state === 'waving' || state === 'turning';
   return moving ? 'always' : 'demand';
 }

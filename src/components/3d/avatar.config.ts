@@ -31,10 +31,6 @@ export interface AvatarConfig {
   mode: AvatarMode;
   /** Path under /public. The file is used exactly as supplied. */
   modelUrl: string | null;
-  /** Still render of the model, shown instantly and as the fallback. None yet. */
-  posterUrl: string | null;
-  /** Intrinsic poster size, so the slot never shifts while it loads. */
-  posterSize: { width: number; height: number };
   /** Clip names are matched case-insensitively; the first match wins. */
   clips: { idle: string[]; wave: string[]; neutral: string[] };
   /** Name of the joint that turns toward the pointer, and its parent for the torso share. */
@@ -54,8 +50,6 @@ export interface AvatarConfig {
 export const avatarConfig: AvatarConfig = {
   mode: 'scene',
   modelUrl: '/models/darryll-avatar.glb',
-  posterUrl: null,
-  posterSize: { width: 800, height: 1000 },
   clips: { idle: ['Idle'], wave: ['Wave'], neutral: ['Neutral'] },
   joints: { head: 'Head', torso: 'Torso' },
   // Reach measured from the clips: Idle ±0.79 m, Wave reaches 1.18 m to the

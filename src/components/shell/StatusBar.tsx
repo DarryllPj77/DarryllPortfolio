@@ -1,13 +1,17 @@
 import type { LayoutMode } from '../../hooks/useMediaQuery';
 import { profile } from '../../data/profile';
+import { getDock } from '../../data/avatarDocks';
 import { useCompanion } from '../companion/companionContext';
+import { DockMenu } from '../companion/DockMenu';
 import styles from './StatusBar.module.css';
 
 /** Quiet strip with the essentials: focus area and OJT availability. */
 export function StatusBar({ layout }: { layout: LayoutMode }) {
   const compact = layout === 'mobile';
   const companion = useCompanion();
-  const roaming = companion.mode === 'mini';
+  const { location } = companion;
+  const where =
+    location.kind === 'dock' ? getDock(location.id).label : location.kind === 'hero' ? 'Home' : 'Exploring';
   return (
     <footer className={styles.statusbar}>
       {!compact ? (
@@ -20,14 +24,9 @@ export function StatusBar({ layout }: { layout: LayoutMode }) {
         </p>
       ) : null}
       <div className={styles.group}>
-        {companion.canRoam ? (
-          <button
-            type="button"
-            className={styles.toggle}
-            onClick={roaming ? companion.dismiss : companion.awaken}
-          >
-            {roaming ? 'Hide avatar' : 'Show avatar'}
-          </button>
+        {/* After the Home introduction: before it, the portrait is the only way in. */}
+        {companion.canRoam && companion.introPhase === 'ready' ? (
+          <DockMenu label={`Avatar: ${where}`} placement="up" buttonClassName={styles.toggle} />
         ) : null}
         <p className={styles.group}>
           <span className={styles.item}>

@@ -1,4 +1,5 @@
 import { useRef, type ComponentPropsWithoutRef, type ReactNode } from 'react';
+import { isDockId } from '../../data/avatarDocks';
 import { sections } from '../../data/navigation';
 import type { SectionId } from '../../data/types';
 import { useViewFocus } from '../../hooks/useViewFocus';
@@ -36,7 +37,11 @@ export function ViewFrame({ section, title, description, marker, children }: Vie
   return (
     <GridFrame>
       <article>
-        <header className={styles.header}>
+        {/* A page header is where Darryll's avatar stands when sent to this section. */}
+        <header
+          className={styles.header}
+          data-avatar-dock={section !== 'home' && isDockId(section) ? section : undefined}
+        >
           <Reveal>
             <SectionLabel {...label} />
           </Reveal>

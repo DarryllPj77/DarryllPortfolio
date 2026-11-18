@@ -20,3 +20,20 @@ export function roamBounds(): Bounds {
     bottom: window.innerHeight - cssPx('--statusbar-h') - EDGE,
   };
 }
+
+/**
+ * Where the avatar may be put down: anywhere on the visible page between the top bar
+ * and the status bar (Explorer included), fully on screen, so it can always be seen
+ * and grabbed again. Nothing it could be dropped behind is above it but the top bar.
+ */
+export function freeBounds(): Bounds {
+  // On phones the status bar is the end of the page, not pinned to the screen.
+  const bar = document.querySelector('body footer');
+  const pinned = bar ? getComputedStyle(bar).position !== 'static' : true;
+  return {
+    left: EDGE / 2,
+    top: cssPx('--topbar-h') + EDGE / 2,
+    right: window.innerWidth - EDGE / 2,
+    bottom: window.innerHeight - (pinned ? cssPx('--statusbar-h') : 0) - EDGE / 2,
+  };
+}

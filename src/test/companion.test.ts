@@ -7,6 +7,8 @@ import {
   homeBase,
   liftInPlace,
   placeBubble,
+  stepSwing,
+  SWING,
   travelSeconds,
   type Bounds,
 } from '../components/companion/companionPlacement';
@@ -83,6 +85,36 @@ describe('companion placement', () => {
     const cramped = placeBubble({ x: 300, y: 60, w: 968, h: 768 }, bubble, bounds);
     expect(cramped.x).toBeGreaterThanOrEqual(bounds.left);
     expect(cramped.y + bubble.h).toBeLessThanOrEqual(bounds.bottom);
+  });
+});
+
+describe('carried swing', () => {
+  const run = (angle: number, speed: number, seconds: number) => {
+    let s = { angle, velocity: 0 };
+    let peak = angle;
+    for (let t = 0; t < seconds; t += 1 / 60) {
+      s = stepSwing(s.angle, s.velocity, speed, 1 / 60);
+      peak = Math.max(peak, Math.abs(s.angle));
+    }
+    return { ...s, peak };
+  };
+
+  it('leans against the direction of travel, never past the limit', () => {
+    expect(run(0, 600, 1).angle).toBeGreaterThan(5); // moving right: feet trail left
+    expect(run(0, -600, 1).angle).toBeLessThan(-5);
+    expect(run(0, 50_000, 1).peak).toBeLessThanOrEqual(SWING.max);
+  });
+
+  it('rights itself once the pointer stops, without swinging back past upright', () => {
+    const settled = run(12, 0, 1.2);
+    expect(Math.abs(settled.angle)).toBeLessThan(0.5);
+    let s = { angle: 12, velocity: 0 };
+    let lowest = 12;
+    for (let i = 0; i < 120; i++) {
+      s = stepSwing(s.angle, s.velocity, 0, 1 / 60);
+      lowest = Math.min(lowest, s.angle);
+    }
+    expect(lowest).toBeGreaterThan(-1); // at most a hair past upright: no bounce
   });
 });
 
@@ -164,13 +196,18 @@ describe('companion lines', () => {
 });
 
 describe('companion state priority', () => {
-  const flags = { dragging: false, waving: false, pointerActive: true };
+  const flags = { turning: false, waving: false, pointerActive: true };
 
-  it('puts what the companion is doing above pointer tracking, below a wave or a drag', () => {
+  it('puts what the companion is doing above pointer tracking, below a wave or a turn', () => {
+    expect(resolveAvatarState({ ...flags, activity: 'grabbed' })).toBe('grabbed');
+    expect(resolveAvatarState({ ...flags, activity: 'dragging' })).toBe('dragging');
+    expect(resolveAvatarState({ ...flags, activity: 'dropping' })).toBe('dropping');
+    expect(resolveAvatarState({ ...flags, activity: 'settling' })).toBe('settling');
+    expect(resolveAvatarState({ ...flags, activity: 'returning' })).toBe('returning');
     expect(resolveAvatarState({ ...flags, activity: 'moving' })).toBe('moving');
     expect(resolveAvatarState({ ...flags, activity: 'talking' })).toBe('talking');
     expect(resolveAvatarState({ ...flags, activity: 'lookingAround' })).toBe('lookingAround');
     expect(resolveAvatarState({ ...flags, waving: true, activity: 'moving' })).toBe('waving');
-    expect(resolveAvatarState({ ...flags, dragging: true, activity: 'talking' })).toBe('dragging');
+    expect(resolveAvatarState({ ...flags, turning: true, activity: 'dragging' })).toBe('turning');
   });
 });

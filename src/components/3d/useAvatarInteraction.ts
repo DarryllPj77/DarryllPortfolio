@@ -18,41 +18,40 @@ import {
 const DRAG_THRESHOLD = 6;
 /** Radians of rotation per slot-width of horizontal drag. */
 const DRAG_SENSITIVITY = 1.6;
+
 interface Options {
   /** The element the avatar is drawn in. Used for drag and pointer maths. */
   target: RefObject<HTMLElement | null>;
   /** True once the 3D avatar is showing. */
   enabled: boolean;
   reducedMotion: boolean;
-  /** What the workspace companion is doing (moving, talking, looking around). */
+  /** What the workspace companion is doing (carried, moving, talking, ...). */
   activity?: CompanionActivity;
 }
 
 /**
- * DOM-side input for the avatar: pointer tracking (mouse/trackpad only),
- * drag to turn it, and click/tap to wave. Pointer positions go into a mutable object read by the canvas each
- * frame; only state changes re-render.
+ * DOM-side input for the avatar: pointer tracking (mouse/trackpad only), a
+ * sideways drag to turn it, and click/tap to wave. Pointer positions go into a
+ * mutable object read by the canvas each frame; only state changes re-render.
+ *
+ * Where the avatar can be picked up and carried (desktop and tablet), the
+ * companion uses its own press handling (useAvatarCarry) instead of `handlers`.
  */
-export function useAvatarInteraction({
-  target,
-  enabled,
-  reducedMotion,
-  activity = null,
-}: Options) {
+export function useAvatarInteraction({ target, enabled, reducedMotion, activity = null }: Options) {
   const input = useRef(createAvatarInput());
-  const [dragging, setDragging] = useState(false);
+  const [turning, setTurning] = useState(false);
   const [waving, setWaving] = useState(false);
   const [pointerActive, setPointerActive] = useState(false);
   const [waveId, setWaveId] = useState(0);
   const press = useRef<{ id: number; startX: number; moved: boolean } | null>(null);
 
-  const state = resolveAvatarState({ dragging, waving, pointerActive, activity });
+  const state = resolveAvatarState({ turning, waving, pointerActive, activity });
 
   const wave = useCallback(() => {
-    if (!enabled || dragging || waving) return;
+    if (!enabled || turning || waving) return;
     setWaving(true);
     setWaveId((n) => n + 1);
-  }, [enabled, dragging, waving]);
+  }, [enabled, turning, waving]);
 
   const onWaveEnd = useCallback(() => setWaving(false), []);
 
@@ -88,7 +87,7 @@ export function useAvatarInteraction({
 
   const endPress = () => {
     press.current = null;
-    setDragging(false);
+    setTurning(false);
   };
 
   const handlers = {
@@ -102,7 +101,7 @@ export function useAvatarInteraction({
       const dx = e.clientX - p.startX;
       if (!p.moved && Math.abs(dx) > DRAG_THRESHOLD) {
         p.moved = true;
-        setDragging(true);
+        setTurning(true);
         // Keep receiving moves if the pointer leaves the slot. Best effort: it
         // throws for pointers the browser no longer tracks.
         try {

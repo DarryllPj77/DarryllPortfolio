@@ -14,7 +14,9 @@ interface SpeechBubbleProps {
   /** The element the visitor clicked: the bubble keeps clear of it. */
   avoid: RectLike | null;
   reducedMotion: boolean;
-  onClose: () => void;
+  /** Closes this bubble only (by id), so an older bubble fading out can never close a newer one. */
+  id: number;
+  onClose: (id: number) => void;
 }
 
 /** Long enough to read the line twice at a relaxed pace, within 4 to 9 seconds. */
@@ -27,7 +29,7 @@ const readingTime = (text: string) =>
  * clicked, and closes by itself (paused while hovered). Screen readers get the
  * line from the companion's live region, so the bubble itself is hidden from them.
  */
-export function SpeechBubble({ title, text, anchor, avoid, reducedMotion, onClose }: SpeechBubbleProps) {
+export function SpeechBubble({ id, title, text, anchor, avoid, reducedMotion, onClose }: SpeechBubbleProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<BubblePlacement | null>(null);
   const [paused, setPaused] = useState(false);
@@ -42,9 +44,9 @@ export function SpeechBubble({ title, text, anchor, avoid, reducedMotion, onClos
 
   useEffect(() => {
     if (paused) return;
-    const timer = window.setTimeout(onClose, readingTime(text));
+    const timer = window.setTimeout(() => onClose(id), readingTime(text));
     return () => window.clearTimeout(timer);
-  }, [paused, text, onClose]);
+  }, [paused, text, onClose, id]);
 
   return (
     <motion.div

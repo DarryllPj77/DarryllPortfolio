@@ -3,11 +3,12 @@
  * One canvas, moved between the hero (docked) and this fixed layer (roaming).
  */
 
-/* Above the workspace and the status bar, below the top bar, dialogs and the intro. */
+/* Above the workspace, the Explorer and the status bar; below the top bar, the phone menu,
+   dialogs and the intro. */
 .layer {
   position: fixed;
   inset: 0;
-  z-index: 45;
+  z-index: 44;
   pointer-events: none;
 }
 
@@ -35,17 +36,14 @@
   pointer-events: none;
 }
 
-/* Large, in the hero: drag to turn it, tap to wave. */
+/* Phones: in the hero, tap to wave and drag sideways to turn. */
 .box[data-mode='hero'] {
   cursor: grab;
 }
 
-.box[data-state='dragging'] {
+.box[data-state='turning'],
+.box[data-state='grabbed'] {
   cursor: grabbing;
-}
-
-.box[data-mode='mini'] {
-  cursor: pointer;
 }
 
 /* The canvas reaches left of the box (--bleed) so the waving hand has room;
@@ -169,4 +167,61 @@
   .hide {
     transition: none;
   }
+}
+
+
+/* The figure inside the box: lifted a little while grabbed, and swinging while carried,
+   both around the grab point at the top of its head. */
+.lift {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 0;
+}
+
+/* Desktop and tablet: the avatar can be picked up. */
+.box[data-carry] {
+  cursor: grab;
+}
+
+/* The ground under the carried avatar: a thin ellipse that follows its feet, showing
+   where it will be put down. */
+.landing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 56px;
+  height: 10px;
+  margin: -5px 0 0 -28px;
+  border: 1px solid var(--color-accent-line);
+  border-radius: 50%;
+  background: var(--color-accent-soft);
+  pointer-events: none;
+  animation: landing-in var(--dur-fast) var(--ease-out);
+}
+
+@keyframes landing-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing {
+    animation: none;
+  }
+}
+
+/* The Home introduction: until the portrait has opened, the avatar stays hidden behind it,
+   takes no input and stays inside the portal (its wave room is clipped). It fades in as it
+   emerges, through the scene's own opacity transition. */
+.box[data-intro] {
+  clip-path: inset(0);
+  pointer-events: none;
+}
+
+.box[data-intro='portrait'] .scene,
+.box[data-intro='scanning'] .scene,
+.box[data-intro='opening'] .scene,
+.box[data-intro='failed'] .scene {
+  opacity: 0;
 }

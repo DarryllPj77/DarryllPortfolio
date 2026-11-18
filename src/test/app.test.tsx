@@ -22,7 +22,9 @@ describe('app shell', () => {
     renderAt('/');
     expect(screen.getByRole('heading', { level: 1, name: /hi, i.m darryll/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Internship availability')).toHaveTextContent('520-hour OJT');
-    expect(screen.getByRole('img', { name: /3d avatar/i })).toBeInTheDocument();
+    // Real Darryll first: without WebGL (as in jsdom) the portrait stays, with no initialize control.
+    expect(screen.getByRole('img', { name: /photo of darryll/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /initialize avatar/i })).not.toBeInTheDocument();
   });
 
   it('navigates with the top nav, marks the active item and focuses the heading', async () => {

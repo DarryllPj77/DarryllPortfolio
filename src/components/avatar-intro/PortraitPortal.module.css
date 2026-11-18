@@ -1,0 +1,455 @@
+/*
+ * Real Darryll → digital Darryll. Every layer fills the avatar slot:
+ *   portal (back) · avatar mount · INITIALIZE button · portrait doors · scan and labels (front)
+ * The phase on .stage drives everything; timings come from introTimeline.ts as variables.
+ */
+.stage {
+  /* How far the doors open: a little out, a little turned. Smaller on smaller screens. */
+  --door-shift: 7%;
+  --door-turn: 16deg;
+  --door-depth: 800px;
+  position: absolute;
+  inset: 0;
+}
+
+/* While the portrait or portal is showing, nothing leaves the slot (no page overflow). */
+.stage:not([data-phase='ready']) {
+  overflow: clip;
+}
+
+@media (max-width: 900px) {
+  .stage {
+    --door-shift: 6%;
+    --door-turn: 12deg;
+  }
+}
+
+@media (max-width: 480px) {
+  .stage {
+    --door-shift: 5%;
+    --door-turn: 8deg;
+    --door-depth: 600px;
+  }
+}
+
+/* ------------------------------------------------------------------ the portal */
+
+.portal {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--color-border-subtle);
+  background-color: var(--color-shell);
+  /* The construction grid, as on the page frame. */
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: center;
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.stage[data-phase='opening'] .portal,
+.stage[data-phase='emerging'] .portal {
+  opacity: 1;
+}
+
+/* Gone once the avatar has emerged: the hero ends exactly as the avatar always stood. */
+.stage[data-phase='emerging'] .portal {
+  opacity: 0;
+  transition: opacity var(--intro-doors-fade) var(--ease-out) var(--intro-doors-fade-after);
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.frame rect {
+  fill: none;
+  stroke: var(--color-accent-line);
+  stroke-width: 1;
+  /* A crisp 1px frame however the slot is shaped; it fades in with the doors opening.
+     (A drawn-in dash cannot be used with a non-scaling stroke: its length goes wrong.) */
+  vector-effect: non-scaling-stroke;
+  opacity: 0;
+  transition: opacity var(--intro-open) var(--ease-out);
+}
+
+.stage[data-phase='opening'] .frame rect,
+.stage[data-phase='emerging'] .frame rect {
+  opacity: 1;
+}
+
+.cross {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background:
+    linear-gradient(var(--grid-mark), var(--grid-mark)) center / 1px 100% no-repeat,
+    linear-gradient(var(--grid-mark), var(--grid-mark)) center / 100% 1px no-repeat;
+}
+
+.cross[data-pos='tl'] {
+  top: calc(3% - 4px);
+  left: calc(3% - 4px);
+}
+
+.cross[data-pos='tr'] {
+  top: calc(3% - 4px);
+  right: calc(3% - 4px);
+}
+
+.cross[data-pos='bl'] {
+  bottom: calc(3% - 4px);
+  left: calc(3% - 4px);
+}
+
+.cross[data-pos='br'] {
+  right: calc(3% - 4px);
+  bottom: calc(3% - 4px);
+}
+
+/* Small system labels, in the status bar's voice. */
+.label {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.stage[data-phase='opening'] .label,
+.stage[data-phase='emerging'] .label {
+  opacity: 1;
+  transition-delay: calc(160ms + var(--i, 0) * 40ms);
+}
+
+.label[data-pos='top'] {
+  top: 6%;
+  left: 7%;
+}
+
+.label[data-pos='status'] {
+  top: 6%;
+  right: 7%;
+}
+
+.label[data-pos='stack'] {
+  bottom: 6%;
+  left: 7%;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+}
+
+.dot[data-waiting] {
+  background: var(--color-accent-2);
+}
+
+/* --------------------------------------------------------- INITIALIZE AVATAR */
+
+.init {
+  /* Covers exactly the photo (centred, square), so the label sits on the portrait itself. */
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  aspect-ratio: 1 / 1;
+  translate: 0 -50%;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 0 var(--space-5);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.init:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 4px;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  color: var(--color-text);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.ctaMark {
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--color-accent-2);
+}
+
+.init:hover .cta,
+.init:focus-visible .cta {
+  border-color: var(--color-accent-line);
+}
+
+.init:hover .ctaMark,
+.init:focus-visible .ctaMark {
+  background: var(--color-accent-2);
+}
+
+.init:active .cta {
+  transform: scale(0.985);
+}
+
+/* -------------------------------------------------------------------- doors */
+
+.doors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+/* The photo is square and shown whole, full width and centred in the slot (the desktop
+   slot is a little taller than wide; tablets and phones are square). */
+.photo {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  aspect-ratio: 1 / 1;
+  translate: 0 -50%;
+  perspective: var(--door-depth);
+}
+
+.whole {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--ease-out);
+}
+
+/* The doors take over the moment they start to open. */
+.stage[data-phase='opening'] .whole,
+.stage[data-phase='emerging'] .whole,
+.stage[data-phase='ready'] .whole {
+  visibility: hidden;
+}
+
+/* At rest the doors sit hidden under the whole photo, ready to open. */
+.stage[data-phase='portrait'] .door,
+.stage[data-phase='scanning'] .door,
+.stage[data-phase='failed'] .door {
+  visibility: hidden;
+}
+
+.door {
+  position: absolute;
+  inset: 0;
+  transition: transform var(--intro-open) var(--ease-out);
+}
+
+.door[data-side='left'] {
+  transform-origin: 0% 50%;
+}
+
+.door[data-side='right'] {
+  transform-origin: 100% 50%;
+}
+
+.door img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 600ms var(--ease-out);
+}
+
+/* The photo stays the focus: on hover it grows a touch inside its frame, nothing more. */
+.init:hover ~ .doors .whole,
+.init:focus-visible ~ .doors .whole {
+  transform: scale(1.02);
+}
+
+/* Two doors opening on the portal: a little out, a little turned, never flying away. */
+.stage[data-phase='opening'] .door[data-side='left'],
+.stage[data-phase='emerging'] .door[data-side='left'] {
+  transform: translateX(calc(-1 * var(--door-shift))) rotateY(var(--door-turn));
+}
+
+.stage[data-phase='opening'] .door[data-side='right'],
+.stage[data-phase='emerging'] .door[data-side='right'] {
+  transform: translateX(var(--door-shift)) rotateY(calc(-1 * var(--door-turn)));
+}
+
+/* Ready: the portrait has stepped aside. On a later visit this is the short cross-fade from
+   the portrait (standing in while the model loads) to the avatar, with no portal replay. */
+.stage[data-phase='ready'] .doors {
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+/* Once the avatar is emerging, the doors fade away and leave it standing. */
+.stage[data-phase='emerging'] .doors {
+  opacity: 0;
+  transition: opacity var(--intro-doors-fade) var(--ease-out) var(--intro-doors-fade-after);
+}
+
+/* The fracture: drawn where the scan line stops, gone as the doors part. */
+.seam {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.seam polyline {
+  fill: none;
+  stroke: var(--color-accent-2);
+  /* In the square photo's own units (about 1px at the desktop size), so the dash that draws
+     it in covers its whole length. */
+  stroke-width: 0.25;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+.stage[data-phase='scanning'] .seam {
+  opacity: 0.9;
+}
+
+.stage[data-phase='scanning'] .seam polyline {
+  animation: draw var(--intro-seam) var(--ease-out) var(--intro-scan) forwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* --------------------------------------------------------------- the scan */
+
+.scan {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+/* The line itself: 1px of cyan at the scan's left edge. */
+.scan::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--color-accent-2);
+}
+
+.stage[data-phase='scanning'] .scan {
+  animation: sweep var(--intro-scan) var(--ease-out) forwards;
+}
+
+/* Across the portrait (a percentage of its own width), stopping on the fracture line. */
+@keyframes sweep {
+  0% {
+    opacity: 0.9;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(46%);
+  }
+}
+
+.scanGrid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(56 189 248 / 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(56 189 248 / 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0;
+}
+
+.stage[data-phase='scanning'] .scanGrid {
+  animation: grid var(--intro-scan) ease-out forwards;
+}
+
+@keyframes grid {
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* One short system line per step. */
+.status {
+  position: absolute;
+  bottom: var(--space-4);
+  left: var(--space-4);
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-panel);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.08em;
+  color: var(--color-text);
+}
+
+/* ------------------------------------------------------------ reduced motion */
+
+/* No scan, split or travel: the doors stay closed and cross-fade to the avatar. */
+@media (prefers-reduced-motion: reduce) {
+  .door,
+  .door img,
+  .frame rect {
+    transition: none !important;
+    transform: none !important;
+  }
+
+  .scan,
+  .scanGrid,
+  .seam {
+    display: none;
+  }
+
+  .stage[data-phase='emerging'] .doors,
+  .stage[data-phase='emerging'] .portal {
+    opacity: 0;
+    transition: opacity var(--intro-crossfade) linear !important;
+  }
+}

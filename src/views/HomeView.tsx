@@ -20,7 +20,7 @@ export function HomeView() {
 
   return (
     <GridFrame>
-      <section className={styles.hero} aria-labelledby="hero-title">
+      <section className={styles.hero} aria-labelledby="hero-title" data-avatar-dock="home">
         <div className={styles.intro}>
           <Reveal>
             <SectionLabel index={sections.home.index} label={sections.home.marker} meta="~/README.md" />
@@ -82,7 +82,7 @@ export function HomeView() {
       <GridDivider />
 
       <section aria-labelledby="home-work">
-        <Reveal trigger="scroll" className={styles.sectionHead}>
+        <Reveal trigger="scroll" className={styles.sectionHead} data-avatar-dock="projects">
           <SectionLabel index={sections.projects.index} label="Selected work" meta="~/projects/" />
           <h2 id="home-work" className={styles.sectionTitle}>
             Selected work
@@ -93,7 +93,13 @@ export function HomeView() {
 
       <GridDivider />
 
-      <Reveal as="section" trigger="scroll" className={styles.cta} aria-labelledby="home-contact">
+      <Reveal
+        as="section"
+        trigger="scroll"
+        className={styles.cta}
+        aria-labelledby="home-contact"
+        data-avatar-dock="contact"
+      >
         <SectionLabel index={sections.contact.index} label={sections.contact.marker} meta="~/contact.me" />
         <h2 id="home-contact" className={styles.sectionTitle}>
           Looking for a .NET intern?

@@ -12,11 +12,13 @@ import {
   type Object3D,
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { easeOut, ENTRANCE, INTRO } from '../avatar-intro/introTimeline';
 import { avatarConfig } from './avatar.config';
 import {
   clamp,
   LIMITS,
   LOOK_AROUND_SECONDS,
+  TRAVELLING,
   type AvatarInput,
   type AvatarState,
 } from './avatarInteraction';
@@ -189,7 +191,8 @@ export default function AvatarModel({
     const still = reducedMotion;
     m.talk = MathUtils.damp(m.talk, state === 'talking' && !still ? 1 : 0, DAMP_GESTURE, delta);
     m.look = MathUtils.damp(m.look, state === 'lookingAround' && !still ? 1 : 0, DAMP_GESTURE, delta);
-    m.float = MathUtils.damp(m.float, state === 'moving' && !still ? 1 : 0, DAMP_GESTURE, delta);
+    const travelling = TRAVELLING.has(state);
+    m.float = MathUtils.damp(m.float, travelling && !still ? 1 : 0, DAMP_GESTURE, delta);
     const since = (performance.now() - input.current.activityStart) / 1000;
     const look = clamp(since / LOOK_AROUND_SECONDS, 0, 1);
     const gestureYaw =
@@ -202,18 +205,27 @@ export default function AvatarModel({
 
     // 3. Whole-avatar rotation: follows the drag directly, turns toward where it travels,
     //    then eases back to rest. While travelling it also floats and leans slightly.
-    const dragging = state === 'dragging';
-    const travel = state === 'moving' && !still ? input.current.travelDir : 0;
+    const turning = state === 'turning';
+    const travel = travelling && !still ? input.current.travelDir : 0;
     const targetBody =
-      restYaw + (dragging ? input.current.dragYaw : 0) + travel * LIMITS.travelYaw;
+      restYaw + (turning ? input.current.dragYaw : 0) + travel * LIMITS.travelYaw;
     m.yaw =
-      dragging || reducedMotion ? targetBody : MathUtils.damp(m.yaw, targetBody, DAMP_RETURN, delta);
+      turning || reducedMotion ? targetBody : MathUtils.damp(m.yaw, targetBody, DAMP_RETURN, delta);
     m.lean = MathUtils.damp(m.lean, -travel * 0.06, DAMP_GESTURE, delta);
+    // 4. The Home introduction's entrance: out of the portal, from smaller and further back,
+    //    rising a little into place (the canvas fades in around it). Ends at rest, exactly.
+    const start = input.current.entranceStart;
+    const t = start > 0 && !still ? clamp((performance.now() - start) / INTRO.emerge, 0, 1) : 1;
+    const e = easeOut(t);
     if (group.current) {
       group.current.rotation.y = m.yaw;
       group.current.rotation.z = m.lean;
-      group.current.position.y = m.float * Math.sin(performance.now() / 160) * 0.03;
+      group.current.position.y =
+        m.float * Math.sin(performance.now() / 160) * 0.03 - (1 - e) * ENTRANCE.rise;
+      group.current.position.z = -(1 - e) * ENTRANCE.depth;
+      group.current.scale.setScalar(ENTRANCE.from + (1 - ENTRANCE.from) * e);
     }
+    if (t >= 1 && start > 0) input.current.entranceStart = 0;
 
     if (!m.started) {
       m.started = true;

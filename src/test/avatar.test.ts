@@ -68,25 +68,25 @@ describe('avatar capability', () => {
 });
 
 describe('avatar interaction state', () => {
-  const flags = { dragging: false, waving: false, pointerActive: false };
+  const flags = { turning: false, waving: false, pointerActive: false };
 
-  it('picks one state by priority: dragging > waving > pointerTracking > idle', () => {
+  it('picks one state by priority: turning > waving > pointerTracking > idle', () => {
     expect(resolveAvatarState(flags)).toBe('idle');
     expect(resolveAvatarState({ ...flags, pointerActive: true })).toBe('pointerTracking');
     expect(resolveAvatarState({ ...flags, pointerActive: true, waving: true })).toBe('waving');
-    expect(resolveAvatarState({ dragging: true, waving: true, pointerActive: true })).toBe(
-      'dragging',
+    expect(resolveAvatarState({ turning: true, waving: true, pointerActive: true })).toBe(
+      'turning',
     );
   });
 
   it('renders only when needed', () => {
     expect(chooseFrameloop(false, false, 'idle')).toBe('never');
     expect(chooseFrameloop(true, false, 'idle')).toBe('always');
-    // Reduced motion: still pose renders on demand, but a wave or drag still animates.
+    // Reduced motion: still pose renders on demand, but a wave or a turn still animates.
     expect(chooseFrameloop(true, true, 'idle')).toBe('demand');
     expect(chooseFrameloop(true, true, 'pointerTracking')).toBe('demand');
     expect(chooseFrameloop(true, true, 'waving')).toBe('always');
-    expect(chooseFrameloop(true, true, 'dragging')).toBe('always');
+    expect(chooseFrameloop(true, true, 'turning')).toBe('always');
   });
 });
 

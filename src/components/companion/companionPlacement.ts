@@ -123,3 +123,17 @@ export function placeBubble(
   const pushed = candidates.map((c) => ({ side: c.side, ...clampToBounds(c.x, c.y, bubble, b) }));
   return pushed.find(clear) ?? pushed[0];
 }
+
+/** The carried avatar's swing: tilt per px/s of horizontal speed, the largest tilt, and its spring. */
+export const SWING = { perSpeed: 0.012, max: 14, stiffness: 70, damping: 14 };
+
+/**
+ * One step of the carried avatar's pendulum swing, in degrees. It leans against the
+ * direction of travel (moving right tilts the feet left, a positive CSS rotation) in
+ * proportion to the speed, and a damped spring rights it once the pointer stops.
+ */
+export function stepSwing(angle: number, velocity: number, speed: number, dt: number) {
+  const lean = clamp(speed * SWING.perSpeed, -SWING.max, SWING.max);
+  const nextVelocity = velocity + ((lean - angle) * SWING.stiffness - velocity * SWING.damping) * dt;
+  return { angle: clamp(angle + nextVelocity * dt, -SWING.max, SWING.max), velocity: nextVelocity };
+}
