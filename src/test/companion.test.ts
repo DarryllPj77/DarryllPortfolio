@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { resolveAvatarState } from '../components/3d/avatarInteraction';
-import { classifyClick } from '../components/companion/companionClicks';
+import { classifyClick, travelDestination } from '../components/companion/companionClicks';
 import {
   atPoint,
   besideTarget,
@@ -165,6 +165,51 @@ describe('companion clicks', () => {
     const outside = document.createElement('div');
     document.body.append(outside);
     expect(classifyClick(click(outside), main, collapsed)).toBeNull();
+  });
+});
+
+describe('right-click travel', () => {
+  const setup = () => {
+    document.body.innerHTML = `
+      <header id="top"><a id="nav" href="/">Home</a></header>
+      <aside id="explorer-panel"><a id="file" href="/about">Darryll.md</a></aside>
+      <main id="main"><p id="text">Words</p><input id="field" /><div id="avatar"></div></main>
+      <footer id="status">Status</footer>`;
+    return (id: string) => document.getElementById(id)!;
+  };
+  const collapsed = { isCollapsed: true } as Selection;
+  const ev = (target: Element, extra: Partial<MouseEvent> & { pointerType?: string } = {}) => ({
+    clientX: 640,
+    clientY: 480,
+    shiftKey: false,
+    target,
+    pointerType: 'mouse',
+    ...extra,
+  });
+  const notAvatar = () => false;
+
+  it('sends it to the pointer from anywhere in the workspace, links and the Explorer included', () => {
+    const $ = setup();
+    expect(travelDestination(ev($('text')), notAvatar, collapsed)).toEqual({ x: 640, y: 480 });
+    expect(travelDestination(ev($('file')), notAvatar, collapsed)).toEqual({ x: 640, y: 480 });
+    expect(travelDestination(ev($('text'), { pointerType: 'pen' }), notAvatar, collapsed)).not.toBeNull();
+  });
+
+  it('keeps the browser menu for touch, Shift, text fields, selected text and outside the workspace', () => {
+    const $ = setup();
+    expect(travelDestination(ev($('text'), { pointerType: 'touch' }), notAvatar, collapsed)).toBeNull();
+    expect(travelDestination(ev($('text'), { shiftKey: true }), notAvatar, collapsed)).toBeNull();
+    expect(travelDestination(ev($('field')), notAvatar, collapsed)).toBeNull();
+    expect(travelDestination(ev($('text')), notAvatar, { isCollapsed: false } as Selection)).toBeNull();
+    expect(travelDestination(ev($('nav')), notAvatar, collapsed)).toBeNull();
+    expect(travelDestination(ev($('status')), notAvatar, collapsed)).toBeNull();
+  });
+
+  it('counts a right-click on the avatar itself (it lives outside the page content)', () => {
+    setup();
+    const avatar = document.createElement('div');
+    document.body.append(avatar);
+    expect(travelDestination(ev(avatar), (el) => el === avatar, collapsed)).not.toBeNull();
   });
 });
 

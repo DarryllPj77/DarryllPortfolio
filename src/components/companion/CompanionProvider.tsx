@@ -36,11 +36,11 @@ import {
   markIntroDone,
   type IntroPhase,
 } from '../avatar-intro/introTimeline';
-import { clamp, type CompanionActivity } from '../3d/avatarInteraction';
+import { clamp, TRAVELLING, type CompanionActivity } from '../3d/avatarInteraction';
 import { useAvatarInteraction } from '../3d/useAvatarInteraction';
 import { Icon } from '../ui/Icon';
 import { freeBounds, roamBounds } from './companionBounds';
-import { classifyClick } from './companionClicks';
+import { classifyClick, travelDestination } from './companionClicks';
 import {
   CompanionContext,
   type CompanionLocation,
@@ -49,6 +49,7 @@ import {
 } from './companionContext';
 import {
   clampToBounds,
+  atPoint,
   homeBase,
   liftInPlace,
   stepSwing,
@@ -133,7 +134,14 @@ const snapshot = ({ left, top, right, bottom, width, height }: RectLike): RectLi
  * it) and put down where it is released, where it stays until it is carried again, sent
  * somewhere with the destination menu, or brought back. Escape mid-carry puts it back.
  * While it is out, clicking a file in the Explorer or a top nav link makes it say something
- * about it from where it stands.
+ * about it from where it stands. A right-click anywhere in the workspace (mouse or pen)
+ * sends it travelling there, from wherever it is, and it stays.
+ *
+ * One positioning model: the box's top-left (x, y) and its layout size (w, h) with a CSS
+ * scale, always in the coordinate space of the element holding it (the viewport when it
+ * is in the fixed layer, the hero spot or a section otherwise). Every move first lifts it
+ * into the layer from its real on-screen box, and every destination (the hero spot, a
+ * section, a point) is measured fresh at the moment it is needed, never cached.
  *
  * The canvas is never re-created: React renders it into one `holder` element that is
  * moved between the hero spot, a docked section and a fixed layer, so it scrolls with
@@ -195,6 +203,10 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const active = wanted && (!isCovered(phase) || !ready);
 
   const [activity, setActivity] = useState<CompanionActivity>(null);
+  const activityRef = useRef<CompanionActivity>(null);
+  useLayoutEffect(() => {
+    activityRef.current = activity;
+  });
   const [bubble, setBubble] = useState<Bubble | null>(null);
   /** While carried: where it was lifted from (the hero shows its empty spot at once), and whether it is over a destination. */
   const [carrying, setCarrying] = useState<{ from: CompanionLocation['kind'] } | null>(null);
@@ -547,6 +559,25 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   /**
+   * Right-click: travel to the clicked spot and stay there. From wherever it is (the hero,
+   * a section, free on the page), starting from where it stands now, standing on the point
+   * (feet at the pointer), kept fully on screen. A new right-click mid-trip redirects it.
+   */
+  const travelTo = (pointer: Point) => {
+    if (!canRoam || !introReady) return;
+    // Never while it is on its way home or being carried.
+    if (activityRef.current === 'returning' || carry.current) return;
+    const fromHero = locationRef.current.kind === 'hero' && holder.parentElement !== layer;
+    if (!toLayer()) return;
+    // Leaving the hero: it shows its empty spot at once, with "Bring the avatar back".
+    if (fromHero) setLeavingHero(true);
+    setBubble(null);
+    busy.current = true;
+    const size = miniSize();
+    void flyToPoint(atPoint(pointer, size, freeBounds()), 'moving');
+  };
+
+  /**
    * The avatar was not on the page (hidden while away from Home): it fades in at its
    * home base, bottom right, then travels to the destination, so it never pops into place.
    */
@@ -710,6 +741,8 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     // Picked up: lift out of wherever it stands and shrink to the small size at once,
     // before any movement, then follow the pointer.
     onGrab(pointer) {
+      // On its way back home it finishes the trip first.
+      if (activityRef.current === 'returning') return;
       stopTravel();
       setBubble(null);
       if (!toLayer()) return;
@@ -762,6 +795,8 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       void flyToPoint(spot, 'dropping');
     },
     onTap() {
+      // A click while it travels does not wave: it is busy going somewhere.
+      if (TRAVELLING.has(activityRef.current ?? 'idle')) return;
       interaction.wave();
     },
     // Escape: the carry is called off, so it goes back where it was picked up.
@@ -816,9 +851,9 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   // Event listeners and effects call the latest versions of these through the ref.
-  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero });
+  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo });
   useLayoutEffect(() => {
-    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero };
+    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo };
   });
   const sendToProxy = useCallback((id: DockId) => api.current.sendTo(id), []);
   const dismissProxy = useCallback(() => api.current.dismiss(), []);
@@ -917,6 +952,21 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
+
+  // Right-click anywhere in the workspace: it travels there (mouse and pen only; touch keeps
+  // its hold-to-pick-up). The browser's own menu stays for text fields, selected text,
+  // Shift + right-click and everything outside the workspace.
+  useEffect(() => {
+    if (!canRoam || !live || !introReady) return;
+    const onContextMenu = (e: MouseEvent) => {
+      const to = travelDestination(e as PointerEvent, (el) => holder.contains(el) || layer.contains(el));
+      if (!to) return;
+      e.preventDefault();
+      api.current.travelTo(to);
+    };
+    document.addEventListener('contextmenu', onContextMenu);
+    return () => document.removeEventListener('contextmenu', onContextMenu);
+  }, [canRoam, live, introReady, holder, layer]);
 
   // While out exploring: clicks send it somewhere, Escape closes the bubble, resizes keep it on screen.
   useEffect(() => {

@@ -46,3 +46,23 @@ export function classifyClick(
   if (selection && !selection.isCollapsed) return null;
   return { kind: 'roam', x: event.clientX, y: event.clientY };
 }
+
+/**
+ * A right-click that should send the avatar travelling: a mouse or pen click inside the
+ * workspace (the page content, the Explorer, or on the avatar itself). Everything else keeps
+ * the browser's own menu: touch (a long press fires `contextmenu` too), Shift + right-click,
+ * text fields, selected text, and anything outside the workspace (top bar, status bar).
+ */
+export function travelDestination(
+  event: Pick<MouseEvent, 'clientX' | 'clientY' | 'shiftKey' | 'target'> & { pointerType?: string },
+  isAvatar: (el: Element) => boolean,
+  selection: Selection | null = window.getSelection(),
+): { x: number; y: number } | null {
+  if (event.pointerType === 'touch' || event.shiftKey) return null;
+  const t = event.target;
+  if (!(t instanceof Element)) return null;
+  if (t.closest('#main, #explorer-panel') === null && !isAvatar(t)) return null;
+  if (t.closest('input, textarea, select, [contenteditable="true"]')) return null;
+  if (selection && !selection.isCollapsed) return null;
+  return { x: event.clientX, y: event.clientY };
+}

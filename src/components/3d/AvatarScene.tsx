@@ -76,6 +76,10 @@ export default function AvatarScene({
 
   return (
     <Canvas
+      // Size the canvas from its layout box, never its on-screen box: the avatar is scaled
+      // with a CSS transform while it travels, shrinks and grows, and a transformed size
+      // measured mid-flight would stick (a tiny avatar after "Bring the avatar back").
+      resize={{ offsetSize: true, scroll: true, debounce: { scroll: 50, resize: 0 } }}
       frameloop={frameloop}
       dpr={[1, 1.5]}
       camera={{ fov: avatarConfig.fov, position: [0, 1.2, 6] }}
