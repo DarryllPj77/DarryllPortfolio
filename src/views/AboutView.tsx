@@ -36,7 +36,7 @@ export function AboutView() {
             ))}
           </dl>
           <Link to="/certifications" className={styles.inlineLink}>
-            {certifications.length} certifications
+            {certifications.length} certificates
             <Icon name="arrow-right" size={14} />
           </Link>
         </Reveal>

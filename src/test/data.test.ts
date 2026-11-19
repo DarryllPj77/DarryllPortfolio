@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { certifications, formatMonth, isActive } from '../data/certifications';
+import { certifications, formatDate, isActive } from '../data/certifications';
 import { explorerTree, getViewMeta } from '../data/navigation';
 import { profile } from '../data/profile';
 import { projects } from '../data/projects';
@@ -61,9 +61,12 @@ describe('portfolio data', () => {
   });
 
   it('formats and evaluates certification dates', () => {
-    expect(formatMonth('2025-07')).toBe('July 2025');
-    const [python] = certifications;
+    expect(formatDate('2025-07-31')).toBe('July 31, 2025');
+    const python = certifications.find((c) => c.id === 'its-python')!;
+    // Valid through its expiry date, five years after July 31, 2025.
     expect(isActive(python, new Date('2030-07-31T12:00:00Z'))).toBe(true);
     expect(isActive(python, new Date('2030-08-01T12:00:00Z'))).toBe(false);
+    // No expiry on the certificate: no status at all, never a made-up one.
+    expect(isActive(certifications.find((c) => c.id === 'its-java')!)).toBeNull();
   });
 });

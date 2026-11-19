@@ -13,6 +13,8 @@ interface LightboxProps {
   label: string;
   onIndexChange: (index: number) => void;
   onClose: () => void;
+  /** What is shown, for the dialog's name and its controls: "screenshot" (default) or "certificate". */
+  noun?: string;
 }
 
 /** While the viewer is open, the rest of the app can't be focused or read. */
@@ -32,11 +34,12 @@ function useModalBackground() {
 }
 
 /**
- * Full-screen screenshot viewer. Shows screenshots at their real size (never
- * enlarged past it), with previous/next within one group. Keyboard: arrow
+ * Full-screen image viewer (project screenshots, certificates). Shows each image at its
+ * real size at most (never enlarged past it, aspect ratio kept), with previous/next within
+ * one group. Keyboard: arrow
  * keys to move, Escape to close; Tab stays inside the viewer.
  */
-export function Lightbox({ shots, index, label, onIndexChange, onClose }: LightboxProps) {
+export function Lightbox({ shots, index, label, onIndexChange, onClose, noun = 'screenshot' }: LightboxProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const shot = shots[index];
@@ -79,7 +82,7 @@ export function Lightbox({ shots, index, label, onIndexChange, onClose }: Lightb
       className={styles.lightbox}
       role="dialog"
       aria-modal="true"
-      aria-label={`${label} screenshots`}
+      aria-label={hasSiblings ? `${label} ${noun}s` : `${label} ${noun}`}
       onKeyDown={onKeyDown}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -100,7 +103,7 @@ export function Lightbox({ shots, index, label, onIndexChange, onClose }: Lightb
           type="button"
           className={styles.lbButton}
           onClick={onClose}
-          aria-label="Close screenshot viewer"
+          aria-label={`Close ${noun} viewer`}
         >
           <Icon name="close" size={18} />
         </button>
@@ -137,7 +140,7 @@ export function Lightbox({ shots, index, label, onIndexChange, onClose }: Lightb
             type="button"
             className={styles.lbButton}
             onClick={() => go(-1)}
-            aria-label="Previous screenshot"
+            aria-label={`Previous ${noun}`}
           >
             <Icon name="arrow-left" size={18} />
           </button>
@@ -145,7 +148,7 @@ export function Lightbox({ shots, index, label, onIndexChange, onClose }: Lightb
             type="button"
             className={styles.lbButton}
             onClick={() => go(1)}
-            aria-label="Next screenshot"
+            aria-label={`Next ${noun}`}
           >
             <Icon name="arrow-right" size={18} />
           </button>

@@ -47,7 +47,7 @@ export const companionLines: Record<string, CompanionLine> = {
   },
   [sections.certifications.path]: {
     title: sections.certifications.file,
-    text: `${certNames.length} certifications so far: ${certNames.join(' and ')}.`,
+    text: `${certNames.length} certificates so far: ${certNames.join(', ').replace(/, ([^,]*)$/, ' and $1')}. Each has the certificate itself and its Credly badge.`,
   },
   [sections.contact.path]: {
     title: sections.contact.file,
@@ -78,7 +78,13 @@ export const companionLines: Record<string, CompanionLine> = {
   ...Object.fromEntries(
     certifications.map((c) => [
       `${sections.certifications.path}#${c.id}`,
-      { title: c.fileName, text: `${c.name}, from ${c.issuer}.` },
+      {
+        title: c.fileName,
+        text:
+          c.kind === 'course'
+            ? `${c.name}: a course I completed with ${c.issuer}.`
+            : `${c.name}, from ${c.issuer}.`,
+      },
     ]),
   ),
 };

@@ -140,12 +140,23 @@ export interface SkillGroup {
 
 export interface Certification {
   id: string;
+  /** The title exactly as the certificate states it. */
   name: string;
+  /** What the document is: a certification, or a certificate of course completion. */
+  kind: 'certification' | 'course';
   /** Workspace file name shown in the Explorer, e.g. "Python.cert". */
   fileName: string;
   issuer: string;
-  /** ISO year-month, e.g. "2025-07". */
+  /** ISO date the certificate was awarded, e.g. "2025-07-31". */
   issued: string;
-  /** ISO year-month, e.g. "2030-07". */
-  expires: string;
+  /** ISO expiry date, only when the certificate states one. */
+  expires?: string;
+  /** The verification code printed on the certificate, when it has one. */
+  credentialId?: string;
+  /** Where that code can be checked, e.g. "verify.certiport.com". */
+  verifyAt?: string;
+  /** The certificate as an image under /public, with its intrinsic size (keeps its aspect ratio). */
+  image: { src: string; width: number; height: number };
+  /** The certificate's badge on Credly. */
+  badgeUrl: string;
 }
