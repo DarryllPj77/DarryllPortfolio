@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { DockId } from '../../data/avatarDocks';
+import type { SectionId } from '../../data/types';
 import type { IntroPhase } from '../avatar-intro/introTimeline';
 
 /**
@@ -27,6 +28,8 @@ export interface CompanionState {
   sceneRequested: boolean;
   /** The 3D scene has drawn its first frame. */
   sceneReady: boolean;
+  /** The section open now, the same however it was reached; Darryll's information follows it. */
+  activeSection: SectionId;
   /** It is being carried out of the hero right now: the hero shows its empty spot. */
   liftedFromHero: boolean;
   /** The Home introduction: the real portrait until it opens on the 3D avatar (`ready`). */
@@ -60,6 +63,7 @@ export const CompanionContext = createContext<CompanionState>({
   location: { kind: 'hero' },
   sceneRequested: false,
   sceneReady: false,
+  activeSection: 'home',
   liftedFromHero: false,
   introPhase: 'portrait',
   canInitialize: false,

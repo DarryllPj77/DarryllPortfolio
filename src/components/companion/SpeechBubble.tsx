@@ -9,8 +9,8 @@ interface SpeechBubbleProps {
   /** File name for the header, like an editor tab. */
   title: string;
   text: string;
-  /** The companion's box when it arrived, in viewport pixels. */
-  anchor: Point & Size;
+  /** The companion's box when it arrived, in viewport pixels; null: a caption at the bottom. */
+  anchor: (Point & Size) | null;
   /** The element the visitor clicked: the bubble keeps clear of it. */
   avoid: RectLike | null;
   reducedMotion: boolean;
@@ -26,7 +26,9 @@ const readingTime = (text: string) =>
 /**
  * The companion's speech bubble: an editor-style panel beside the avatar. It
  * opens on the first side that fits on screen and keeps clear of what was
- * clicked, and closes by itself (paused while hovered). Screen readers get the
+ * clicked, and closes by itself (paused while a pointer rests on it). When the
+ * avatar is not on screen at its small size it is a caption at the bottom of
+ * the screen instead, with the same words. Screen readers get the
  * line from the companion's live region, so the bubble itself is hidden from them.
  */
 export function SpeechBubble({ id, title, text, anchor, avoid, reducedMotion, onClose }: SpeechBubbleProps) {
@@ -34,10 +36,10 @@ export function SpeechBubble({ id, title, text, anchor, avoid, reducedMotion, on
   const [place, setPlace] = useState<BubblePlacement | null>(null);
   const [paused, setPaused] = useState(false);
 
-  // Measure once rendered, then place before the first paint.
+  // Measure once rendered, then place before the first paint (a caption places itself in CSS).
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
+    if (!el || !anchor) return;
     const size = { w: el.offsetWidth, h: el.offsetHeight };
     setPlace(placeBubble(anchor, size, roamBounds(), avoid));
   }, [anchor, avoid]);
@@ -53,8 +55,14 @@ export function SpeechBubble({ id, title, text, anchor, avoid, reducedMotion, on
       ref={ref}
       className={styles.bubble}
       data-side={place?.side}
+      data-docked={anchor ? undefined : ''}
+      data-companion-bubble=""
       aria-hidden="true"
-      style={{ left: place?.x ?? 0, top: place?.y ?? 0, visibility: place ? 'visible' : 'hidden' }}
+      style={
+        anchor
+          ? { left: place?.x ?? 0, top: place?.y ?? 0, visibility: place ? 'visible' : 'hidden' }
+          : undefined
+      }
       initial={{ opacity: 0, y: reducedMotion ? 0 : 4 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, transition: { duration: reducedMotion ? 0 : duration.exit } }}
@@ -66,6 +74,16 @@ export function SpeechBubble({ id, title, text, anchor, avoid, reducedMotion, on
         <span className={styles.bubbleDot} />
         {title}
       </p>
+      {/* A tap target for touch (Escape and a tap anywhere else close it too). */}
+      <button
+        type="button"
+        className={styles.bubbleClose}
+        tabIndex={-1}
+        aria-hidden="true"
+        onClick={() => onClose(id)}
+      >
+        ×
+      </button>
       <p className={styles.bubbleText}>{text}</p>
     </motion.div>
   );

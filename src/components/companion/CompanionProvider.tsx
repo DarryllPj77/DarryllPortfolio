@@ -22,7 +22,7 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router';
 import { getDock, type DockId } from '../../data/avatarDocks';
 import { getCompanionLine } from '../../data/companion';
-import { normalizePath } from '../../data/navigation';
+import { getViewMeta, normalizePath } from '../../data/navigation';
 import { useAvatarCapability } from '../../hooks/useAvatarCapability';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useIntro } from '../../intro/introContext';
@@ -92,11 +92,17 @@ const DOCK_WAIT_FRAMES = 240;
 
 interface Bubble {
   id: number;
+  /** The page or file the line is about (a route path, with a hash for one certification). */
+  key: string;
   title: string;
   text: string;
-  anchor: Point & Size;
+  /** Beside the avatar when it is on screen at its small size; null: a caption at the bottom. */
+  anchor: (Point & Size) | null;
   avoid: RectLike | null;
 }
+
+/** After a page change, the new page has rendered and the avatar has settled. */
+const SAY_AFTER_NAV = 450;
 
 /** True while the element is within `rootMargin` of the viewport. */
 function useElementInView(el: Element | null, rootMargin = '200px') {
@@ -156,7 +162,13 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const compact = useMediaQuery(avatarConfig.compactQuery);
   const baseFraming = compact ? avatarConfig.framing.compact : avatarConfig.framing.portrait;
   const navigate = useNavigate();
-  const pathname = normalizePath(useLocation().pathname);
+  const route = useLocation();
+  const pathname = normalizePath(route.pathname);
+  /**
+   * The active section, shared by every way of navigating (top nav, Explorer, the phone
+   * menu, links in the page, back and forward): Darryll's information follows it.
+   */
+  const activeSection = getViewMeta(pathname).section;
 
   const [failed, setFailed] = useState(false);
   const sceneOn = capability === 'scene' && !failed;
@@ -208,6 +220,8 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     activityRef.current = activity;
   });
   const [bubble, setBubble] = useState<Bubble | null>(null);
+  /** The key of the line showing now (or null), so a line is never repeated back to back. */
+  const showingKey = useRef<string | null>(null);
   /** While carried: where it was lifted from (the hero shows its empty spot at once), and whether it is over a destination. */
   const [carrying, setCarrying] = useState<{ from: CompanionLocation['kind'] } | null>(null);
   const [placement, setPlacement] = useState(0);
@@ -495,6 +509,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   const closeBubble = useCallback(() => {
+    showingKey.current = null;
     setBubble(null);
     setActivity((a) => (a === 'talking' ? null : a));
   }, []);
@@ -571,7 +586,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     if (!toLayer()) return;
     // Leaving the hero: it shows its empty spot at once, with "Bring the avatar back".
     if (fromHero) setLeavingHero(true);
-    setBubble(null);
+    closeBubble();
     busy.current = true;
     const size = miniSize();
     void flyToPoint(atPoint(pointer, size, freeBounds()), 'moving');
@@ -632,7 +647,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   /** Sends the avatar to a destination, travelling there; opens its page first when it is elsewhere. */
   const sendTo = (id: DockId) => {
     if (!canRoam) return;
-    setBubble(null);
+    closeBubble();
     // Leaving the hero: it shows its empty spot at once, with "Bring the avatar back".
     if (id !== 'home' && !isOut() && holder.isConnected) setLeavingHero(true);
     if (id === 'home') {
@@ -675,7 +690,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   /** Back to the hero; on other pages it simply goes out of view. */
   const dismiss = () => {
     if (!isOut()) return;
-    setBubble(null);
+    closeBubble();
     if (heroMount && toLayer()) {
       busy.current = true;
       void flyToHero('returning');
@@ -744,7 +759,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       // On its way back home it finishes the trip first.
       if (activityRef.current === 'returning') return;
       stopTravel();
-      setBubble(null);
+      closeBubble();
       if (!toLayer()) return;
       busy.current = true;
       const origin = locationRef.current;
@@ -813,29 +828,52 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   /* ------------------------------------------------------------ clicks, roam */
 
   /**
-   * While it is out of the hero, clicking a file in the Explorer or a top nav link makes it
-   * say something about it, from where it stands: it is never moved by a click, only by
-   * being carried or sent (Move Darryll, Bring the avatar back).
+   * Darryll says the line for a page or file. The same for every device and every way of
+   * getting there: beside him when he is on screen at his small size, otherwise (in the
+   * hero, so the hero text stays clear; on another page; mid-trip; no 3D) as a caption at
+   * the bottom of the screen. The same line is never shown twice in a row.
+   */
+  const say = (key: string, avoid: RectLike | null = null) => {
+    if (carry.current || intro.active) return;
+    const line = getCompanionLine(key);
+    if (!line || showingKey.current === key) return;
+    const r = box.current?.getBoundingClientRect();
+    const beside =
+      live &&
+      introReady &&
+      !busy.current &&
+      locationRef.current.kind !== 'hero' &&
+      holder.isConnected &&
+      r !== undefined &&
+      r.width > 0 &&
+      r.bottom > 0 &&
+      r.top < window.innerHeight &&
+      r.right > 0 &&
+      r.left < window.innerWidth;
+    if (beside) startActivity('talking');
+    bubbleId.current += 1;
+    showingKey.current = key;
+    setBubble({
+      id: bubbleId.current,
+      key,
+      ...line,
+      anchor: beside && r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null,
+      avoid,
+    });
+  };
+
+  /**
+   * Desktop extra: clicking an Explorer folder, or the file of the page already open, also
+   * makes him speak (no page change follows). A click that navigates says the same line the
+   * page change would, so the line is shown once.
    */
   const onClick = (e: MouseEvent) => {
-    if (busy.current || intro.active) return;
+    if (busy.current) return;
     if (e.target instanceof Node && (layer.contains(e.target) || holder.contains(e.target))) return;
     const click = classifyClick(e, document.getElementById('main'));
     if (click?.kind !== 'target') return;
-    const line = getCompanionLine(click.key);
-    if (!line) return;
     // Measure now, before the click navigates or closes a menu.
-    const rect = snapshot(click.element.getBoundingClientRect());
-    const anchor = box.current?.getBoundingClientRect();
-    if (!anchor || anchor.width === 0) return;
-    startActivity('talking');
-    bubbleId.current += 1;
-    setBubble({
-      id: bubbleId.current,
-      ...line,
-      anchor: { x: anchor.left, y: anchor.top, w: anchor.width, h: anchor.height },
-      avoid: rect,
-    });
+    say(click.key, snapshot(click.element.getBoundingClientRect()));
   };
 
   const keepInside = () => {
@@ -851,9 +889,9 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   // Event listeners and effects call the latest versions of these through the ref.
-  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo });
+  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, say });
   useLayoutEffect(() => {
-    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo };
+    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, say };
   });
   const sendToProxy = useCallback((id: DockId) => api.current.sendTo(id), []);
   const dismissProxy = useCallback(() => api.current.dismiss(), []);
@@ -968,23 +1006,46 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('contextmenu', onContextMenu);
   }, [canRoam, live, introReady, holder, layer]);
 
-  // While out exploring: clicks send it somewhere, Escape closes the bubble, resizes keep it on screen.
+  // Darryll's information follows the active section: after every page change, however it
+  // happened (desktop nav, Explorer, phone menu, a link, back or forward), he says that page's
+  // line. Not on the first load: he only speaks when the visitor goes somewhere.
+  const sectionKey = `${pathname}${route.hash}`;
+  const firstSection = useRef(true);
   useEffect(() => {
-    if (mode !== 'mini' || !live) return;
+    if (firstSection.current) {
+      firstSection.current = false;
+      return;
+    }
+    const key = getCompanionLine(sectionKey) ? sectionKey : pathname;
+    const t = window.setTimeout(() => api.current.say(key), SAY_AFTER_NAV);
+    return () => window.clearTimeout(t);
+  }, [sectionKey, pathname]);
+
+  // Clicks on Explorer folders and files (desktop), Escape and a tap or click anywhere outside
+  // the line close it (touch-friendly: no hover needed), resizes keep the avatar on screen.
+  useEffect(() => {
     const click = (e: MouseEvent) => api.current.onClick(e);
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeBubble();
     };
+    const outside = (e: PointerEvent) => {
+      if (!showingKey.current) return;
+      const line = layer.querySelector('[data-companion-bubble]');
+      if (line && e.target instanceof Node && line.contains(e.target)) return;
+      closeBubble();
+    };
     const resize = () => api.current.keepInside();
     document.addEventListener('click', click, true);
+    document.addEventListener('pointerdown', outside, true);
     window.addEventListener('keydown', key);
     window.addEventListener('resize', resize);
     return () => {
       document.removeEventListener('click', click, true);
+      document.removeEventListener('pointerdown', outside, true);
       window.removeEventListener('keydown', key);
       window.removeEventListener('resize', resize);
     };
-  }, [mode, live, closeBubble]);
+  }, [closeBubble, layer]);
 
 
   const onReady = useCallback(() => setReady(true), []);
@@ -997,6 +1058,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
     sceneOn,
     sceneRequested: sceneOn && requested,
     sceneReady: live,
+    activeSection,
     introPhase: phase,
     canInitialize: sceneOn && !unavailable,
     waitingForModel,
@@ -1076,7 +1138,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
             {bubble ? `${bubble.title}: ${bubble.text}` : ''}
           </p>
           <AnimatePresence>
-            {bubble && mode === 'mini' ? (
+            {bubble ? (
               <SpeechBubble
                 key={bubble.id}
                 title={bubble.title}
