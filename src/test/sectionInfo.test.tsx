@@ -46,6 +46,19 @@ describe("Darryll's section information", () => {
     await waitFor(() => expect(shownLine()).toContain(aboutLine), { timeout: 2000 });
   });
 
+  it('explains a hero button when it is clicked on desktop (GitHub, the resume)', async () => {
+    window.innerWidth = 1280;
+    const user = userEvent.setup();
+    renderAt('/');
+    const profiles = screen.getByRole('list', { name: 'Profiles' });
+    await user.click(within(profiles).getByRole('link', { name: /github/i }));
+    await waitFor(() => expect(shownLine()).toContain(companionLines['action:github'].text));
+    expect(companionLines['action:github'].text).toMatch(/Academic Sentinel, PreMatch Tracker and SpendSync/);
+
+    await user.click(screen.getAllByRole('button', { name: /view resume/i })[0]);
+    await waitFor(() => expect(shownLine()).toContain(companionLines['action:resume'].text));
+  });
+
   it('closes with a tap anywhere else, and with its own close control', async () => {
     window.innerWidth = 375;
     const user = userEvent.setup();

@@ -37,7 +37,7 @@ export function HomeView() {
           </Reveal>
 
           <Reveal className={styles.actions}>
-            <Link to="/projects" className={buttonClass('primary')}>
+            <Link to="/projects" className={buttonClass('primary')} data-companion="/projects">
               Explore Projects
               <Icon name="arrow-right" size={16} />
             </Link>
@@ -47,13 +47,13 @@ export function HomeView() {
           <Reveal className={styles.meta}>
             <ul role="list" className={styles.socials} aria-label="Profiles">
               <li>
-                <ExternalLink href={github.href} className={styles.social}>
+                <ExternalLink href={github.href} className={styles.social} data-companion="action:github">
                   <Icon name="github" size={16} />
                   GitHub
                 </ExternalLink>
               </li>
               <li>
-                <ExternalLink href={linkedin.href} className={styles.social}>
+                <ExternalLink href={linkedin.href} className={styles.social} data-companion="action:linkedin">
                   <Icon name="linkedin" size={16} />
                   LinkedIn
                 </ExternalLink>
@@ -109,11 +109,11 @@ export function HomeView() {
           is the quickest way to reach me.
         </p>
         <div className={styles.actions}>
-          <Link to="/contact" className={buttonClass('primary')}>
+          <Link to="/contact" className={buttonClass('primary')} data-companion="/contact">
             Get in touch
             <Icon name="arrow-right" size={16} />
           </Link>
-          <a href={`mailto:${profile.email}`} className={buttonClass('ghost')}>
+          <a href={`mailto:${profile.email}`} className={buttonClass('ghost')} data-companion="action:email">
             <Icon name="mail" size={16} />
             {profile.email}
           </a>

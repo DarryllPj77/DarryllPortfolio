@@ -56,6 +56,25 @@ export const companionLines: Record<string, CompanionLine> = {
   ...Object.fromEntries(
     projects.map((p) => [`/projects/${p.slug}`, { title: p.fileName, text: projectLine(p) }]),
   ),
+  // Buttons Darryll explains when clicked on desktop (marked with data-companion="action:…").
+  'action:resume': {
+    title: 'resume.pdf',
+    text: profile.resumeUrl
+      ? 'My resume, as a PDF: education, projects and the OJT I am looking for.'
+      : `My resume is on its way. Until then, email is the quickest way to reach me about a ${profile.internship.label}.`,
+  },
+  'action:github': {
+    title: 'github.com',
+    text: `The code for ${projects.map((p) => p.name).join(', ').replace(/, ([^,]*)$/, ' and $1')} is on my GitHub.`,
+  },
+  'action:linkedin': {
+    title: 'linkedin.com',
+    text: 'My LinkedIn profile, if you would like to connect.',
+  },
+  'action:email': {
+    title: 'mail',
+    text: `This opens an email to me: the quickest way to reach me about a ${profile.internship.label}.`,
+  },
   ...Object.fromEntries(
     certifications.map((c) => [
       `${sections.certifications.path}#${c.id}`,

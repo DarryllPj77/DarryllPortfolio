@@ -66,3 +66,47 @@ export function travelDestination(
   if (selection && !selection.isCollapsed) return null;
   return { x: event.clientX, y: event.clientY };
 }
+
+/** A tap is lifted within this time; longer is a hold (the avatar's hold-to-pick-up is 300ms). */
+export const TAP_MAX_MS = 280;
+/** A tap moves less than this (px); more is the start of a scroll or a swipe. */
+export const TAP_SLOP = 10;
+
+export interface TouchDown {
+  x: number;
+  y: number;
+  /** performance.now() at the press. */
+  t: number;
+  scrollX: number;
+  scrollY: number;
+}
+
+export interface TouchUp extends TouchDown {
+  target: EventTarget | null;
+  pointerType: string;
+}
+
+/**
+ * A finger tap that should send the avatar travelling to the tapped spot: a quick, still,
+ * single touch on empty space in the workspace. Not a hold (that is the avatar's pick-up),
+ * not a swipe or scroll (the finger moved, or the page scrolled), and not a tap on anything
+ * with its own job: links, buttons, fields, menus, dialogs, the avatar or its speech line.
+ */
+export function tapDestination(
+  down: TouchDown,
+  up: TouchUp,
+  isAvatarOrLine: (el: Element) => boolean,
+  selection: Selection | null = window.getSelection(),
+): { x: number; y: number } | null {
+  if (up.pointerType !== 'touch') return null;
+  if (up.t - down.t > TAP_MAX_MS) return null;
+  if (Math.hypot(up.x - down.x, up.y - down.y) > TAP_SLOP) return null;
+  if (up.scrollX !== down.scrollX || up.scrollY !== down.scrollY) return null;
+  const t = up.target;
+  if (!(t instanceof Element)) return null;
+  if (isAvatarOrLine(t)) return null;
+  if (t.closest('#main, #explorer-panel') === null) return null;
+  if (t.closest(INTERACTIVE) || t.closest('[role="dialog"]')) return null;
+  if (selection && !selection.isCollapsed) return null;
+  return { x: up.x, y: up.y };
+}

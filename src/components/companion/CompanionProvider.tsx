@@ -40,7 +40,12 @@ import { clamp, TRAVELLING, type CompanionActivity } from '../3d/avatarInteracti
 import { useAvatarInteraction } from '../3d/useAvatarInteraction';
 import { Icon } from '../ui/Icon';
 import { freeBounds, roamBounds } from './companionBounds';
-import { classifyClick, travelDestination } from './companionClicks';
+import {
+  classifyClick,
+  tapDestination,
+  travelDestination,
+  type TouchDown,
+} from './companionClicks';
 import {
   CompanionContext,
   type CompanionLocation,
@@ -48,8 +53,9 @@ import {
   type CompanionState,
 } from './companionContext';
 import {
-  clampToBounds,
   atPoint,
+  besideTarget,
+  clampToBounds,
   homeBase,
   liftInPlace,
   stepSwing,
@@ -141,7 +147,9 @@ const snapshot = ({ left, top, right, bottom, width, height }: RectLike): RectLi
  * somewhere with the destination menu, or brought back. Escape mid-carry puts it back.
  * While it is out, clicking a file in the Explorer or a top nav link makes it say something
  * about it from where it stands. A right-click anywhere in the workspace (mouse or pen)
- * sends it travelling there, from wherever it is, and it stays.
+ * sends it travelling there, from wherever it is, and it stays. On touch screens a quick
+ * tap on empty page space does the same once it is out exploring (tap it: a wave; hold it:
+ * pick it up; swipe: the page scrolls).
  *
  * One positioning model: the box's top-left (x, y) and its layout size (w, h) with a CSS
  * scale, always in the coordinate space of the element holding it (the viewport when it
@@ -222,6 +230,14 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   const [bubble, setBubble] = useState<Bubble | null>(null);
   /** The key of the line showing now (or null), so a line is never repeated back to back. */
   const showingKey = useRef<string | null>(null);
+  /** The kind of the latest pointer press: a right-click right after a finger touch is touch. */
+  const lastPointerType = useRef('mouse');
+  /** The latest press closed an open line: the click that follows it only closes the line. */
+  const pressClosedLine = useRef(false);
+  /** A button's line waiting for him to arrive beside it (a page change does not say it first). */
+  const pendingSay = useRef<string | null>(null);
+  /** A finger press that may become a tap-to-move, and whether a line was open when it began. */
+  const fingerDown = useRef<(TouchDown & { id: number; lineWasOpen: boolean }) | null>(null);
   /** While carried: where it was lifted from (the hero shows its empty spot at once), and whether it is over a destination. */
   const [carrying, setCarrying] = useState<{ from: CompanionLocation['kind'] } | null>(null);
   const [placement, setPlacement] = useState(0);
@@ -593,6 +609,16 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   /**
+   * A finger tap on empty page space: on touch screens the equivalent of a right-click, but
+   * only once Darryll is out exploring (carried out, or sent with Move Darryll), so ordinary
+   * reading taps on Home never pull him out of the hero.
+   */
+  const tapTo = (point: Point) => {
+    if (locationRef.current.kind === 'hero' && holder.parentElement !== layer) return;
+    travelTo(point);
+  };
+
+  /**
    * The avatar was not on the page (hidden while away from Home): it fades in at its
    * home base, bottom right, then travels to the destination, so it never pops into place.
    */
@@ -842,7 +868,7 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       live &&
       introReady &&
       !busy.current &&
-      locationRef.current.kind !== 'hero' &&
+      (locationRef.current.kind !== 'hero' || holder.parentElement === layer) &&
       holder.isConnected &&
       r !== undefined &&
       r.width > 0 &&
@@ -863,17 +889,63 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Desktop extra: clicking an Explorer folder, or the file of the page already open, also
-   * makes him speak (no page change follows). A click that navigates says the same line the
-   * page change would, so the line is shown once.
+   * Visible buttons and links near a clicked one, so Darryll stands beside it without covering
+   * them either. Read once per click, never per frame.
+   */
+  const buttonsAround = (clicked: Element): RectLike[] =>
+    Array.from(document.querySelectorAll('a[href], button, [role="button"], input, select, textarea'))
+      .filter((el) => el !== clicked && !clicked.contains(el) && !layer.contains(el) && !holder.contains(el))
+      .map((el) => snapshot(el.getBoundingClientRect()))
+      .filter((r) => r.width > 0 && r.bottom > 0 && r.top < window.innerHeight);
+
+  /**
+   * Desktop: Darryll goes to the clicked button or link, stands beside it without covering
+   * its label, then says what it is. From anywhere, the hero included: clicking it is a
+   * deliberate request for an explanation.
+   */
+  const goAndSay = (key: string, element: Element) => {
+    const rect = snapshot(element.getBoundingClientRect());
+    if (activityRef.current === 'returning' || carry.current) return;
+    const fromHero = locationRef.current.kind === 'hero' && holder.parentElement !== layer;
+    if (!canRoam || !live || !introReady || !toLayer()) {
+      say(key, rect);
+      return;
+    }
+    if (fromHero) setLeavingHero(true);
+    closeBubble();
+    busy.current = true;
+    pendingSay.current = key;
+    const to = besideTarget(rect, miniSize(), freeBounds(), buttonsAround(element));
+    void flyToPoint(to, 'moving').then((arrived) => {
+      if (pendingSay.current === key) pendingSay.current = null;
+      if (arrived) say(key, rect);
+    });
+  };
+
+  /**
+   * Clicks on the page.
+   * - Desktop (mouse or pen): a click on a marked button or link (top nav, Explorer, the hero
+   *   and contact buttons) brings Darryll beside it to explain it; a click on empty page space
+   *   sends him there once he is out exploring. The first click while his line is open only
+   *   closes the line.
+   * - Touch and keyboard: a marked button or link makes him say its line where he is; he never
+   *   moves (phones move him with tap-to-move instead).
+   * A click that also changes page says its line once, on arrival.
    */
   const onClick = (e: MouseEvent) => {
-    if (busy.current) return;
     if (e.target instanceof Node && (layer.contains(e.target) || holder.contains(e.target))) return;
+    const closedLine = pressClosedLine.current;
+    pressClosedLine.current = false;
     const click = classifyClick(e, document.getElementById('main'));
-    if (click?.kind !== 'target') return;
-    // Measure now, before the click navigates or closes a menu.
-    say(click.key, snapshot(click.element.getBoundingClientRect()));
+    if (!click) return;
+    const desktopPointer = e.detail > 0 && lastPointerType.current !== 'touch';
+    if (click.kind === 'target') {
+      if (desktopPointer) goAndSay(click.key, click.element);
+      // Measure now, before the click navigates or closes a menu.
+      else if (!busy.current) say(click.key, snapshot(click.element.getBoundingClientRect()));
+      return;
+    }
+    if (desktopPointer && !closedLine) tapTo({ x: e.clientX, y: e.clientY });
   };
 
   const keepInside = () => {
@@ -889,9 +961,9 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   };
 
   // Event listeners and effects call the latest versions of these through the ref.
-  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, say });
+  const api = useRef({ onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, tapTo, say });
   useLayoutEffect(() => {
-    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, say };
+    api.current = { onClick, keepInside, sendTo, dismiss, flyToDock, flyToPoint, flyToHero, travelTo, tapTo, say };
   });
   const sendToProxy = useCallback((id: DockId) => api.current.sendTo(id), []);
   const dismissProxy = useCallback(() => api.current.dismiss(), []);
@@ -997,7 +1069,12 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!canRoam || !live || !introReady) return;
     const onContextMenu = (e: MouseEvent) => {
-      const to = travelDestination(e as PointerEvent, (el) => holder.contains(el) || layer.contains(el));
+      // Some in-app browsers fire a long-press as a contextmenu without saying it was a finger.
+      const pointerType = (e as PointerEvent).pointerType || lastPointerType.current;
+      const to = travelDestination(
+        { clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey, target: e.target, pointerType },
+        (el) => holder.contains(el) || layer.contains(el),
+      );
       if (!to) return;
       e.preventDefault();
       api.current.travelTo(to);
@@ -1017,35 +1094,84 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
       return;
     }
     const key = getCompanionLine(sectionKey) ? sectionKey : pathname;
+    // A button click that changed the page says this line itself, beside the button, on arrival.
+    if (pendingSay.current === key) return;
     const t = window.setTimeout(() => api.current.say(key), SAY_AFTER_NAV);
     return () => window.clearTimeout(t);
   }, [sectionKey, pathname]);
 
   // Clicks on Explorer folders and files (desktop), Escape and a tap or click anywhere outside
   // the line close it (touch-friendly: no hover needed), resizes keep the avatar on screen.
+  // On touch screens a quick tap on empty page space sends Darryll there (tapDestination
+  // decides what counts as a tap); the first tap while a line is open only closes the line.
   useEffect(() => {
     const click = (e: MouseEvent) => api.current.onClick(e);
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeBubble();
     };
-    const outside = (e: PointerEvent) => {
-      if (!showingKey.current) return;
-      const line = layer.querySelector('[data-companion-bubble]');
-      if (line && e.target instanceof Node && line.contains(e.target)) return;
-      closeBubble();
+    const press = (e: PointerEvent) => {
+      lastPointerType.current = e.pointerType;
+      const lineWasOpen = showingKey.current !== null;
+      pressClosedLine.current = lineWasOpen;
+      if (lineWasOpen) {
+        const line = layer.querySelector('[data-companion-bubble]');
+        if (!(line && e.target instanceof Node && line.contains(e.target))) closeBubble();
+      }
+      // A second finger (a pinch) is never a tap.
+      if (e.pointerType !== 'touch' || !e.isPrimary || fingerDown.current) {
+        fingerDown.current = null;
+        return;
+      }
+      fingerDown.current = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        t: performance.now(),
+        scrollX: window.scrollX,
+        scrollY: window.scrollY,
+        lineWasOpen,
+      };
+    };
+    const lift = (e: PointerEvent) => {
+      const down = fingerDown.current;
+      if (!down || down.id !== e.pointerId) return;
+      fingerDown.current = null;
+      if (down.lineWasOpen) return;
+      const to = tapDestination(
+        down,
+        {
+          x: e.clientX,
+          y: e.clientY,
+          t: performance.now(),
+          scrollX: window.scrollX,
+          scrollY: window.scrollY,
+          target: e.target,
+          pointerType: e.pointerType,
+        },
+        (el) => holder.contains(el) || layer.contains(el),
+      );
+      if (to) api.current.tapTo(to);
+    };
+    // The browser took the touch over to scroll (or another finger came): not a tap.
+    const cancel = () => {
+      fingerDown.current = null;
     };
     const resize = () => api.current.keepInside();
     document.addEventListener('click', click, true);
-    document.addEventListener('pointerdown', outside, true);
+    document.addEventListener('pointerdown', press, true);
+    document.addEventListener('pointerup', lift, true);
+    document.addEventListener('pointercancel', cancel, true);
     window.addEventListener('keydown', key);
     window.addEventListener('resize', resize);
     return () => {
       document.removeEventListener('click', click, true);
-      document.removeEventListener('pointerdown', outside, true);
+      document.removeEventListener('pointerdown', press, true);
+      document.removeEventListener('pointerup', lift, true);
+      document.removeEventListener('pointercancel', cancel, true);
       window.removeEventListener('keydown', key);
       window.removeEventListener('resize', resize);
     };
-  }, [closeBubble, layer]);
+  }, [closeBubble, layer, holder]);
 
 
   const onReady = useCallback(() => setReady(true), []);

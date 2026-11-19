@@ -48,20 +48,58 @@ export function homeBase(size: Size, b: Bounds): Point {
   return clampToBounds(b.right - size.w, b.bottom - size.h, size, b);
 }
 
+/** True when two boxes overlap (touching edges do not count). */
+const boxesOverlap = (a: RectLike, b: RectLike) =>
+  a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+const boxAt = (p: Point, size: Size): RectLike => ({
+  left: p.x,
+  top: p.y,
+  right: p.x + size.w,
+  bottom: p.y + size.h,
+  width: size.w,
+  height: size.h,
+});
+
 /**
- * Next to a clicked element: below it when it sits in the top bar (above the
- * workspace), otherwise beside it on the right, or on the left when the right
- * has no room. Always inside the bounds.
+ * Next to a clicked element, never on top of it. Below it when it sits in the top bar
+ * (above the workspace); otherwise to its right, left, below or above, in that order. It
+ * takes the first spot that is fully on screen and clear of the element and of the other
+ * buttons and links around it (`obstacles`), else the first clear of the element itself;
+ * only when nothing on screen is clear does it fall back to the nearest spot.
  */
-export function besideTarget(target: RectLike, size: Size, b: Bounds): Point {
+export function besideTarget(
+  target: RectLike,
+  size: Size,
+  b: Bounds,
+  obstacles: readonly RectLike[] = [],
+): Point {
   const centerX = target.left + target.width / 2;
   const centerY = target.top + target.height / 2;
-  if (target.bottom <= b.top + 1) {
-    return clampToBounds(centerX - size.w / 2, b.top, size, b);
-  }
-  const right = Math.max(target.right, b.left - GAP) + GAP;
-  const x = right + size.w <= b.right ? right : target.left - GAP - size.w;
-  return clampToBounds(x, centerY - size.h / 2, size, b);
+  const candidates: Point[] =
+    target.bottom <= b.top + 1
+      ? [
+          { x: centerX - size.w / 2, y: b.top },
+          { x: target.right + GAP, y: b.top },
+          { x: target.left - GAP - size.w, y: b.top },
+        ]
+      : [
+          { x: Math.max(target.right, b.left - GAP) + GAP, y: centerY - size.h / 2 },
+          { x: target.left - GAP - size.w, y: centerY - size.h / 2 },
+          { x: centerX - size.w / 2, y: target.bottom + GAP },
+          { x: centerX - size.w / 2, y: target.top - GAP - size.h },
+        ];
+  const onScreen = (p: Point) =>
+    p.x >= b.left && p.y >= b.top && p.x + size.w <= b.right && p.y + size.h <= b.bottom;
+  const clearOf = (p: Point, list: readonly RectLike[]) => !list.some((o) => boxesOverlap(boxAt(p, size), o));
+  const everything = [target, ...obstacles];
+  const best =
+    candidates.find((p) => onScreen(p) && clearOf(p, everything)) ??
+    candidates.find((p) => onScreen(p) && clearOf(p, [target]));
+  if (best) return best;
+  // Nothing fits as is: push each spot on screen and keep the first that still leaves the element clear.
+  const pushed = candidates.map((p) => clampToBounds(p.x, p.y, size, b));
+  return pushed.find((p) => clearOf(p, [target])) ?? pushed[0];
 }
 
 /**

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { resolveAvatarState } from '../components/3d/avatarInteraction';
-import { classifyClick, travelDestination } from '../components/companion/companionClicks';
+import {
+  classifyClick,
+  TAP_MAX_MS,
+  TAP_SLOP,
+  tapDestination,
+  travelDestination,
+} from '../components/companion/companionClicks';
 import {
   atPoint,
   besideTarget,
@@ -59,6 +65,20 @@ describe('companion placement', () => {
     expect(p).not.toEqual(homeBase(size, bounds));
     // Near the top of the workspace it still stays below the top bar.
     expect(liftInPlace(rect(960, -200, 420, 520), size, bounds).y).toBe(bounds.top);
+  });
+
+  it('never covers the clicked button, and steps around the buttons next to it', () => {
+    const overlaps = (p: { x: number; y: number }, r: ReturnType<typeof rect>) =>
+      p.x < r.right && p.x + size.w > r.left && p.y < r.bottom && p.y + size.h > r.top;
+    // "Explore Projects" with "View Resume" right beside it: not to the right (that covers it).
+    const explore = rect(400, 500, 150, 40);
+    const resume = rect(560, 500, 140, 40);
+    const p = besideTarget(explore, size, bounds, [resume]);
+    expect(overlaps(p, explore)).toBe(false);
+    expect(overlaps(p, resume)).toBe(false);
+    // Tight against the bottom right corner: still never on the button itself.
+    const corner = rect(1150, 780, 110, 40);
+    expect(overlaps(besideTarget(corner, size, bounds), corner)).toBe(false);
   });
 
   it('stands on a clicked spot', () => {
@@ -210,6 +230,55 @@ describe('right-click travel', () => {
     const avatar = document.createElement('div');
     document.body.append(avatar);
     expect(travelDestination(ev(avatar), (el) => el === avatar, collapsed)).not.toBeNull();
+  });
+});
+
+describe('tap to move (touch)', () => {
+  const setup = () => {
+    document.body.innerHTML = `
+      <header id="top"><button id="menu">Menu</button></header>
+      <main id="main"><p id="text">Words</p><a id="link" href="/x">Link</a><button id="btn">Go</button>
+        <input id="field" /><div role="dialog"><p id="inDialog">Hi</p></div></main>`;
+    return (id: string) => document.getElementById(id)!;
+  };
+  const collapsed = { isCollapsed: true } as Selection;
+  const down = { x: 200, y: 400, t: 1000, scrollX: 0, scrollY: 300 };
+  const up = (target: Element, extra: Partial<Parameters<typeof tapDestination>[1]> = {}) => ({
+    ...down,
+    t: 1120,
+    x: 203,
+    y: 402,
+    target,
+    pointerType: 'touch',
+    ...extra,
+  });
+  const none = () => false;
+
+  it('sends it to the tapped spot on empty page space', () => {
+    const $ = setup();
+    expect(tapDestination(down, up($('text')), none, collapsed)).toEqual({ x: 203, y: 402 });
+  });
+
+  it('is never a hold, a swipe or a scroll', () => {
+    const $ = setup();
+    expect(tapDestination(down, up($('text'), { t: down.t + TAP_MAX_MS + 1 }), none, collapsed)).toBeNull();
+    expect(tapDestination(down, up($('text'), { x: down.x + TAP_SLOP + 1 }), none, collapsed)).toBeNull();
+    expect(tapDestination(down, up($('text'), { scrollY: 340 }), none, collapsed)).toBeNull();
+  });
+
+  it('leaves links, buttons, fields, dialogs, the top bar and the avatar to their own jobs', () => {
+    const $ = setup();
+    for (const id of ['link', 'btn', 'field', 'inDialog', 'menu']) {
+      expect(tapDestination(down, up($(id)), none, collapsed), id).toBeNull();
+    }
+    expect(tapDestination(down, up($('text')), (el) => el.id === 'text', collapsed)).toBeNull();
+  });
+
+  it('is for fingers only: a mouse or pen click does not move it, and neither does selecting text', () => {
+    const $ = setup();
+    expect(tapDestination(down, up($('text'), { pointerType: 'mouse' }), none, collapsed)).toBeNull();
+    expect(tapDestination(down, up($('text'), { pointerType: 'pen' }), none, collapsed)).toBeNull();
+    expect(tapDestination(down, up($('text')), none, { isCollapsed: false } as Selection)).toBeNull();
   });
 });
 

@@ -53,11 +53,11 @@ export function TopBar({ meta, layout, menuOpen, onToggleMenu, menuButtonRef }: 
 
       <div className={styles.end}>
         <div className={styles.socials}>
-          <ExternalLink href={github.href} className={buttonClass('ghost', 'icon')} title="GitHub">
+          <ExternalLink href={github.href} className={buttonClass('ghost', 'icon')} title="GitHub" data-companion="action:github">
             <Icon name="github" size={18} />
             <span className="visually-hidden">GitHub</span>
           </ExternalLink>
-          <ExternalLink href={linkedin.href} className={buttonClass('ghost', 'icon')} title="LinkedIn">
+          <ExternalLink href={linkedin.href} className={buttonClass('ghost', 'icon')} title="LinkedIn" data-companion="action:linkedin">
             <Icon name="linkedin" size={18} />
             <span className="visually-hidden">LinkedIn</span>
           </ExternalLink>

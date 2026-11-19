@@ -15,7 +15,7 @@ interface ResumeButtonProps {
 export function ResumeButton({ variant = 'secondary', size = 'md' }: ResumeButtonProps) {
   if (profile.resumeUrl) {
     return (
-      <ExternalLink href={profile.resumeUrl} className={buttonClass(variant, size)}>
+      <ExternalLink href={profile.resumeUrl} className={buttonClass(variant, size)} data-companion="action:resume">
         <Icon name="file-text" size={size === 'sm' ? 14 : 16} />
         View Resume
       </ExternalLink>
@@ -27,6 +27,7 @@ export function ResumeButton({ variant = 'secondary', size = 'md' }: ResumeButto
       className={buttonClass(variant, size)}
       aria-disabled="true"
       title="Resume coming soon"
+      data-companion="action:resume"
       onClick={(e) => e.preventDefault()}
     >
       <Icon name="file-text" size={size === 'sm' ? 14 : 16} />
