@@ -1,6 +1,6 @@
 /**
  * The exhibition's measurements, in scene units (about a metre each). One place, so the
- * hexagons, the orbit, the lights and the camera always agree.
+ * hexagons, the wheel, the lights and the camera always agree.
  */
 
 /** Circumradius of a display case: its corner-to-centre size. The flat edges are top and bottom. */
@@ -16,19 +16,30 @@ export const FACE_RADIUS = HEX_RADIUS - FACE_INSET;
 /** Front of the body: the face and glass sit just in front of it. */
 export const HEX_FRONT_Z = HEX_DEPTH / 2 + HEX_BEVEL;
 
-/** Radius of the invisible ring the cases stand on. */
-export const ORBIT_RADIUS = 3.6;
-/** Height of a case's centre above the floor: it floats a hand's width above it. */
-export const EXHIBIT_Y = HEX_HALF_HEIGHT + 0.32;
+/* ---------- The wheel ---------- */
+
+/** From the axle to the centre of each cabin (each display case rides the wheel as a cabin). */
+export const WHEEL_RADIUS = 3.3;
 /**
- * Each case turns only part of the way with the ring, so the ones at the sides still show
- * their screens at an angle instead of their backs (like displays on small turntables).
+ * Height of the axle: a cabin passing straight underneath, stepped back from the rim and
+ * tilted, still clears the floor.
  */
-export const FACING_SHARE = 0.4;
-/** How far an inactive case steps back along the ring's radius. */
+export const AXLE_Y = WHEEL_RADIUS + HEX_HALF_HEIGHT + 0.7;
+/**
+ * The twin rims stand either side of the cabins (which hang between them on a crossbar); the
+ * axle runs out past them to the stand's legs.
+ */
+export const RIM_X = HEX_RADIUS + 0.3;
+export const AXLE_HALF = RIM_X + 0.25;
+/**
+ * Cabins stay upright as the wheel turns, like a Ferris wheel's, and only tilt a little toward
+ * the visitor when above or below the front, so their screens are always readable.
+ */
+export const CABIN_TILT = 0.3;
+/** How far a cabin that is not in front steps back along its spoke. */
 export const RECEDE = 0.22;
 
-/** Where the camera looks: the active case's centre, slightly low so the floor shows. */
-export const FOCUS_POINT = [0, EXHIBIT_Y - 0.1, ORBIT_RADIUS] as const;
+/** Where the camera looks and the exhibit light falls: the front cabin's centre. */
+export const FOCUS_POINT = [0, AXLE_Y - 0.1, WHEEL_RADIUS] as const;
 
 export const HALL_COLOUR = '#070b14';

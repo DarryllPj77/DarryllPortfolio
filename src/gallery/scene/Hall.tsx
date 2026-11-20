@@ -19,11 +19,11 @@ import type { OrbitState } from '../orbit/OrbitState';
 import type { ShowState } from '../show/ShowState';
 import { createFloorTexture } from './hallTextures';
 import type { Quality } from './quality';
-import { EXHIBIT_Y, HALL_COLOUR, ORBIT_RADIUS } from './layout';
+import { FOCUS_POINT, HALL_COLOUR } from './layout';
 
 /** The exhibit light hangs above and in front of the front position and stays there. */
-const LAMP = new Vector3(0, 6.4, ORBIT_RADIUS + 2.2);
-const LAMP_TARGET = new Vector3(0, EXHIBIT_Y - 0.4, ORBIT_RADIUS);
+const LAMP_TARGET = new Vector3(FOCUS_POINT[0], FOCUS_POINT[1] - 0.3, FOCUS_POINT[2]);
+const LAMP = LAMP_TARGET.clone().add(new Vector3(0, 3.4, 2.2));
 const WARM = '#fff4e6';
 const LAMP_INTENSITY = 70;
 const FILL_INTENSITY = 0.18;

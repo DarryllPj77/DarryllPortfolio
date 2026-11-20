@@ -7,7 +7,7 @@ import { useOrbitDrag, type DragAxis } from '../orbit/useOrbitDrag';
 import type { ShowState } from '../show/ShowState';
 import { CameraRig } from './CameraRig';
 import { Hall } from './Hall';
-import { Orbit } from './Orbit';
+import { Wheel } from './Wheel';
 import { FrameProbe, initialQuality, type Quality } from './quality';
 import styles from './ExhibitionCanvas.module.css';
 
@@ -127,7 +127,7 @@ export default function ExhibitionCanvas({
         <Hall orbit={orbit} show={show} quality={quality} />
         <CameraRig show={show} />
         <Suspense fallback={null}>
-          <Orbit
+          <Wheel
             projects={projects}
             orbit={orbit}
             show={show}

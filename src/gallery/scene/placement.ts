@@ -1,32 +1,48 @@
 import { MathUtils } from 'three';
 import { turnFor } from '../orbit/orbitPhysics';
-import { FACING_SHARE, HEX_HALF_HEIGHT, HEX_RADIUS, ORBIT_RADIUS, RECEDE } from './layout';
+import { AXLE_Y, CABIN_TILT, HEX_HALF_HEIGHT, HEX_RADIUS, RECEDE, WHEEL_RADIUS } from './layout';
 
 /** An angle folded into −π … π. */
 export const fold = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
-export interface Placement {
-  x: number;
+export interface CabinPlacement {
+  /** Where the cabin's centre is around the axle: 0 in front, positive above, negative below. */
+  angle: number;
+  y: number;
   z: number;
-  /** The case's own turn about its vertical axis. */
-  yaw: number;
+  /** Its small tilt toward the visitor (about the axle's direction). */
+  pitch: number;
 }
 
 /**
- * Where case `index` stands when the ring is turned by `ringAngle` (0 puts case 0 in front of
- * the camera). `emphasis` 1 keeps a case on the ring, 0 steps it back by RECEDE. Each case
- * turns only part of the way with the ring, so the side cases still show their screens.
+ * Where cabin `index` is when the wheel is turned by `wheelAngle` (0 puts cabin 0 in front of
+ * the camera). The cabins are spread evenly round the wheel, the next one waiting below the
+ * front and the previous one above, so "next" (scroll down, swipe up, ↓) brings the next
+ * project up into view. `emphasis` 1 keeps a cabin on the rim, 0 steps it back along its
+ * spoke by RECEDE. `withdraw` (while another project opens) moves it back into the hall at
+ * the same height, so a cabin below never sinks through the floor.
  */
-export function placeOnRing(
+export function placeOnWheel(
   index: number,
-  ringAngle: number,
+  wheelAngle: number,
   emphasis: number,
   count: number,
   withdraw = 0,
-): Placement {
-  const angle = fold(index * turnFor(count) + ringAngle);
-  const radius = ORBIT_RADIUS + RECEDE * (1 - emphasis) + withdraw;
-  return { x: Math.sin(angle) * radius, z: Math.cos(angle) * radius, yaw: angle * FACING_SHARE };
+): CabinPlacement {
+  const angle = fold(-index * turnFor(count) - wheelAngle);
+  const radius = WHEEL_RADIUS + RECEDE * (1 - emphasis);
+  return {
+    angle,
+    y: AXLE_Y + Math.sin(angle) * radius,
+    z: Math.cos(angle) * radius - withdraw,
+    pitch: angle * CABIN_TILT,
+  };
+}
+
+/** Where the rim carries cabin `index` (the point its crossbar and spokes meet). */
+export function rimPoint(index: number, wheelAngle: number, count: number): { y: number; z: number } {
+  const angle = fold(-index * turnFor(count) - wheelAngle);
+  return { y: AXLE_Y + Math.sin(angle) * WHEEL_RADIUS, z: Math.cos(angle) * WHEEL_RADIUS };
 }
 
 /**

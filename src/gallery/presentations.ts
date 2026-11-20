@@ -15,10 +15,9 @@ export interface PresentationSpec {
 }
 
 export const presentations: Record<PresentationType, PresentationSpec> = {
-  // Phase 1 still draws the cases on the horizontal ring; phase 2 replaces the scene with the
-  // vertical wheel (and the drag axis with 'y'). Nothing else changes when it does.
+  // The cases ride a wheel that turns about a horizontal axle; the hand moves up and down.
   'vertical-wheel': {
     scene: lazy(() => import('./scene/ExhibitionCanvas')),
-    dragAxis: 'x',
+    dragAxis: 'y',
   },
 };

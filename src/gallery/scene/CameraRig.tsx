@@ -2,14 +2,22 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { Fog, MathUtils, type PerspectiveCamera } from 'three';
 import type { ShowState } from '../show/ShowState';
-import { EXHIBIT_Y, FOCUS_POINT, ORBIT_RADIUS } from './layout';
+import { AXLE_Y, FOCUS_POINT, WHEEL_RADIUS } from './layout';
 import { framingDistance, framingLift, openDistance } from './placement';
+
+/**
+ * On a wide screen the camera stands a little to the left, turned about 15°, so the wheel reads
+ * as a circle receding in depth rather than a flat column. On a tall phone screen (and while a
+ * project opens) it faces the wheel squarely.
+ */
+const WIDE_YAW = -0.26;
+const yawFor = (aspect: number) => (aspect > 1.15 ? WIDE_YAW : 0);
 
 /** How far the camera drifts with the mouse, in scene units: about two degrees of view. */
 const PARALLAX = { x: 0.35, y: 0.18 };
 
 /**
- * The camera. At rest it stands slightly above and in front of the case at the front, looking
+ * The camera. At rest it stands slightly above and in front of the wheel's front cabin, looking
  * at its centre; as a case opens it moves in level with it until it fills most of the view.
  * On a desktop with a mouse it drifts very slightly with the pointer, which gives the hall
  * depth. The fog is measured from wherever the camera stands, so the case it looks at is
@@ -44,11 +52,12 @@ export function CameraRig({ show }: { show: ShowState }) {
     // Resting framing.
     const restDistance = framingDistance(camera.fov, aspect);
     const restLookY = fy - framingLift(camera.fov, aspect);
-    // Moved in on an opened case: level with its centre.
+    // Moved in on an opened case: level with its centre, square on.
     const a = show.approach;
     const distance = MathUtils.lerp(restDistance, openDistance(camera.fov, aspect), a);
-    const lookY = MathUtils.lerp(restLookY, EXHIBIT_Y, a);
+    const lookY = MathUtils.lerp(restLookY, AXLE_Y, a);
     const rise = MathUtils.lerp(restDistance * 0.07, 0, a);
+    const yaw = MathUtils.lerp(yawFor(aspect), 0, a);
 
     // The mouse drift, eased; none while a case is open or opening.
     const browsing = show.phase === 'browsing';
@@ -59,16 +68,16 @@ export function CameraRig({ show }: { show: ShowState }) {
     if (Math.abs(target.x - drift.current.x) + Math.abs(target.y - drift.current.y) > 1e-3) state.invalidate();
 
     camera.position.set(
-      fx + drift.current.x * PARALLAX.x,
+      fx + Math.sin(yaw) * distance + drift.current.x * PARALLAX.x,
       lookY + rise - drift.current.y * PARALLAX.y,
-      fz + distance,
+      fz + Math.cos(yaw) * distance,
     );
     camera.lookAt(fx, lookY, fz);
 
     const { scene } = get();
     if (scene.fog instanceof Fog) {
       scene.fog.near = distance + 1;
-      scene.fog.far = distance + ORBIT_RADIUS * 2 + 9;
+      scene.fog.far = distance + WHEEL_RADIUS * 2 + 9;
     }
   });
 
