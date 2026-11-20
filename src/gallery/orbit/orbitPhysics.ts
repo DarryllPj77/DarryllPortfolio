@@ -1,13 +1,15 @@
 /**
- * The ring's physics, as pure functions: no React, no three.js, so it can be tested exactly.
+ * The physics of a turning exhibit (a ring or a wheel of `count` cases), as pure functions:
+ * no React, no three.js, so it can be tested exactly. The axis it turns about is the
+ * presentation's business; here there is only an angle.
  *
- * Angles are the ring's turn in radians. A "stop" is a turn that puts one case squarely in
- * front of the camera: 0, ±TURN, ±2·TURN… Turning the ring by +TURN brings the case on the
- * left to the front (the ring moves right, like the visitor's hand when dragging right).
+ * Angles are the turn in radians. A "stop" is a turn that puts one case squarely in front of
+ * the camera: 0, ±turn, ±2·turn…, where one turn is a full circle divided by the number of
+ * cases. Turning by +turn brings the previous case to the front.
  */
 
-export const COUNT = 3;
-export const TURN = (Math.PI * 2) / COUNT;
+/** The angle between neighbouring cases: a full circle shared out evenly, never padded. */
+export const turnFor = (count: number) => (Math.PI * 2) / count;
 
 /** The fastest the ring may turn, in radians per second: a hard fling never becomes a spin. */
 export const MAX_SPEED = 6;
@@ -31,14 +33,14 @@ export const PROJECTION = 0.18;
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 /** The nearest stop to an angle. */
-export const nearestStop = (angle: number) => Math.round(angle / TURN) * TURN;
+export const nearestStop = (angle: number, count: number) => Math.round(angle / turnFor(count)) * turnFor(count);
 
 /** Which case is in front at a stop (or nearest to the front at any angle). */
-export const caseAt = (angle: number) => mod(-Math.round(angle / TURN), COUNT);
+export const caseAt = (angle: number, count: number) => mod(-Math.round(angle / turnFor(count)), count);
 
 /** The stop that brings case `index` to the front, reached the short way from `angle`. */
-export function stopFor(index: number, angle: number): number {
-  const base = -index * TURN;
+export function stopFor(index: number, angle: number, count: number): number {
+  const base = -index * turnFor(count);
   const turns = Math.round((angle - base) / (Math.PI * 2));
   return base + turns * Math.PI * 2;
 }
@@ -47,8 +49,8 @@ export function stopFor(index: number, angle: number): number {
  * The ring follows the hand one-to-one for a full case either way from where the drag began;
  * past that it resists (a quarter as far), so no single drag can wind it round.
  */
-export function rubberBand(offset: number): number {
-  const limit = TURN;
+export function rubberBand(offset: number, count: number): number {
+  const limit = turnFor(count);
   const over = Math.abs(offset) - limit;
   return over <= 0 ? offset : Math.sign(offset) * (limit + over * 0.25);
 }
@@ -57,10 +59,11 @@ export function rubberBand(offset: number): number {
  * Where a release settles: the stop nearest to where its momentum would carry it, but never
  * more than one case from the stop the drag began at.
  */
-export function releaseTarget(angle: number, velocity: number, startStop: number): number {
+export function releaseTarget(angle: number, velocity: number, startStop: number, count: number): number {
+  const turn = turnFor(count);
   const projected = angle + clampSpeed(velocity) * PROJECTION;
-  const steps = Math.max(-1, Math.min(1, Math.round((projected - startStop) / TURN)));
-  return startStop + steps * TURN;
+  const steps = Math.max(-1, Math.min(1, Math.round((projected - startStop) / turn)));
+  return startStop + steps * turn;
 }
 
 export const clampSpeed = (v: number) => Math.max(-MAX_SPEED, Math.min(MAX_SPEED, v));
@@ -102,8 +105,9 @@ export const isSettled = (angle: number, velocity: number, target: number) =>
  * to 0 by 60% of the way to the next position. Drives its brightness, its lit edge and how
  * far it steps back, so focus moves with the ring instead of switching.
  */
-export function emphasisOf(index: number, angle: number): number {
-  const offset = Math.atan2(Math.sin(index * TURN + angle), Math.cos(index * TURN + angle));
-  const t = Math.max(0, 1 - Math.abs(offset) / (TURN * 0.6));
+export function emphasisOf(index: number, angle: number, count: number): number {
+  const turn = turnFor(count);
+  const offset = Math.atan2(Math.sin(index * turn + angle), Math.cos(index * turn + angle));
+  const t = Math.max(0, 1 - Math.abs(offset) / (turn * 0.6));
   return t * t * (3 - 2 * t);
 }

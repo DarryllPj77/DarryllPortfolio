@@ -24,13 +24,14 @@ vi.mock('../gallery/scene/ExhibitionCanvas', () => ({
 }));
 
 const { GalleryApp } = await import('../gallery/GalleryApp');
-const { galleryProjects } = await import('../gallery/data');
+const { exhibits } = await import('../gallery/data');
 
 const placardName = () => screen.getByRole('heading', { level: 2 }).textContent;
 const controls = () => screen.getByRole('navigation', { name: 'Exhibition' });
 
-// Each visit starts from a clean address: the Gallery restores the project named in it.
-beforeEach(() => window.history.replaceState(null, '', '/gallery'));
+// Each visit starts inside the collection, from a clean address (the Gallery restores the
+// project an address names). The lobby has its own tests below.
+beforeEach(() => window.history.replaceState(null, '', '/gallery#/3-best-projects'));
 
 describe('exhibition controls', () => {
   it('starts on Academic Sentinel and announces nothing on arrival', async () => {
@@ -113,9 +114,9 @@ describe('opening a project', () => {
     await user.click(screen.getByRole('button', { name: 'View project: Academic Sentinel' }));
     const dialog = await screen.findByRole('dialog', { name: 'Academic Sentinel' }, { timeout: 3000 });
     expect(within(dialog).getByRole('heading', { level: 2, name: 'Academic Sentinel' })).toHaveFocus();
-    expect(window.location.hash).toBe('#academic-sentinel/open');
+    expect(window.location.hash).toBe('#/3-best-projects/academic-sentinel/open');
     // Every screen, each described, and only the project's own links plus its case study.
-    const project = galleryProjects[0];
+    const project = exhibits[0];
     for (const shot of [project.cover, ...project.screens]) {
       expect(within(dialog).getByRole('img', { name: shot.alt })).toHaveAttribute('src', shot.src);
     }
@@ -138,15 +139,15 @@ describe('opening a project', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'View project: PreMatch Tracker' })).toHaveFocus(), {
       timeout: 3000,
     });
-    expect(window.location.hash).toBe('#prematch-tracker');
+    expect(window.location.hash).toBe('#/3-best-projects/prematch-tracker');
   });
 
-  it('closes from the bar’s “Exhibition” button too', async () => {
+  it('closes from the bar’s “3 Best Projects” level too', async () => {
     const user = userEvent.setup();
     await ready();
     await user.click(screen.getByRole('button', { name: 'View project: Academic Sentinel' }));
     await screen.findByRole('dialog', {}, { timeout: 3000 });
-    await user.click(screen.getByRole('button', { name: 'Exhibition' }));
+    await user.click(within(screen.getByRole('navigation', { name: 'Gallery' })).getByRole('button', { name: /3 best projects/i }));
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 3000 });
   });
 
@@ -157,3 +158,61 @@ describe('opening a project', () => {
   });
 });
 
+describe('the lobby and the way between levels', () => {
+  const atLobby = () => window.history.replaceState(null, '', '/gallery');
+  const bar = () => screen.getByRole('navigation', { name: 'Gallery' });
+
+  it('opens on the lobby, showing only the collection that exists', async () => {
+    atLobby();
+    render(<GalleryApp />);
+    expect(screen.getByText('One collection on view')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['3 Best Projects']);
+    expect(screen.getByText(/3 works/)).toHaveTextContent('Academic Sentinel, PreMatch Tracker, SpendSync');
+    expect(screen.queryByTestId('scene')).not.toBeInTheDocument(); // no 3D until a collection is entered
+    expect(within(bar()).getByText('After Hours')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('enters the collection, with its own address and a way back to the lobby', async () => {
+    const user = userEvent.setup();
+    atLobby();
+    render(<GalleryApp />);
+    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    expect(window.location.hash).toBe('#/3-best-projects');
+    expect(within(bar()).getByText('3 Best Projects')).toHaveAttribute('aria-current', 'page');
+    await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
+    await screen.findByText('One collection on view');
+    expect(window.location.hash).toBe('');
+  });
+
+  it('goes up with Escape: from the collection to the lobby', async () => {
+    const user = userEvent.setup();
+    render(<GalleryApp />); // starts in the collection (see beforeEach)
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    await user.keyboard('{Escape}');
+    await screen.findByText('One collection on view');
+    expect(window.location.hash).toBe('#/');
+  });
+
+  it('keeps the project in front when the visitor comes back to the collection', async () => {
+    const user = userEvent.setup();
+    atLobby();
+    render(<GalleryApp />);
+    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => expect(placardName()).toBe('PreMatch Tracker'));
+    await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
+    await screen.findByText('One collection on view');
+    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    expect(placardName()).toBe('PreMatch Tracker');
+  });
+
+  it('takes links from the earlier Gallery to the same project in the collection', async () => {
+    window.history.replaceState(null, '', '/gallery#prematch-tracker');
+    render(<GalleryApp />);
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    expect(placardName()).toBe('PreMatch Tracker');
+  });
+});

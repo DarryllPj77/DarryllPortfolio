@@ -1,4 +1,3 @@
-import { COUNT } from '../orbit/orbitPhysics';
 import { ENTRANCE, entrancePose, HANDOFF, OPENING, openingPose } from './choreography';
 
 /** What the page is doing. */
@@ -28,11 +27,13 @@ export class ShowState {
   hall = 0;
   lamp = 0;
   turn = 0;
-  depth: number[] = Array(COUNT).fill(16);
+  depth: number[];
   /** Brightness kept by each case (1 = as the ring sets it). */
-  caseLight: number[] = Array(COUNT).fill(1);
+  caseLight: number[];
   /** How far each case has withdrawn outward. */
-  withdraw: number[] = Array(COUNT).fill(0);
+  withdraw: number[];
+  /** How many cases the exhibit holds. */
+  readonly count: number;
   approach = 0;
   /** The opened case's screen on the page, measured by the scene as the presentation takes over. */
   screenRect: ScreenRect | null = null;
@@ -50,7 +51,21 @@ export class ShowState {
   private listeners = new Set<Listener>();
   private wake: () => void = () => {};
 
-  constructor({ entrance = 'full' as keyof typeof ENTRANCE, startOpen = false, opened = 0 } = {}) {
+  constructor({
+    count,
+    entrance = 'full' as keyof typeof ENTRANCE,
+    startOpen = false,
+    opened = 0,
+  }: {
+    count: number;
+    entrance?: keyof typeof ENTRANCE;
+    startOpen?: boolean;
+    opened?: number;
+  }) {
+    this.count = count;
+    this.depth = Array(count).fill(16);
+    this.caseLight = Array(count).fill(1);
+    this.withdraw = Array(count).fill(0);
     this.entranceLength = ENTRANCE[entrance];
     this.opened = opened;
     if (startOpen) {
@@ -75,8 +90,17 @@ export class ShowState {
   /** Whether the placard and the ring's controls are showing. */
   getUi = () => this.ui;
 
-  setWake(wake: () => void) {
+  /**
+   * Lets the scene be woken (asked for a frame) when something changes. Returns a release that
+   * clears it only if it is still this scene's: a scene that is being replaced (React Three
+   * Fiber releases an old canvas a moment after the new one starts) must not switch off its
+   * successor's wake, or the exhibit would stop answering until something else redraws it.
+   */
+  setWake(wake: () => void): () => void {
     this.wake = wake;
+    return () => {
+      if (this.wake === wake) this.wake = () => {};
+    };
   }
 
   setReducedMotion(reduced: boolean) {
@@ -152,14 +176,14 @@ export class ShowState {
   }
 
   private update() {
-    const e = entrancePose(this.entrance / this.entranceLength, this.reduced);
+    const e = entrancePose(this.entrance / this.entranceLength, this.count, this.reduced);
     const o = openingPose(this.open, this.reduced);
     this.hall = e.hall * o.hall;
     this.lamp = e.lamp * o.lamp;
     this.turn = e.turn;
     this.depth = e.depth;
     this.approach = o.approach;
-    for (let i = 0; i < COUNT; i++) {
+    for (let i = 0; i < this.count; i++) {
       const other = i !== this.opened;
       this.caseLight[i] = e.hall * (other ? o.others : 1);
       this.withdraw[i] = other ? o.withdraw : 0;

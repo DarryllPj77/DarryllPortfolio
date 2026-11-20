@@ -3,11 +3,12 @@ import type { Project, ProjectLink } from '../data/types';
 import type { FocalPoint } from './scene/hexGeometry';
 
 /*
- * The Gallery's three exhibits. Names, years, credits and links come from the portfolio's
- * projects.ts, so facts stay in one place; this file only chooses the real screenshots each
- * exhibit shows and a few headline technologies. Every image is an original file in
- * /public/image/projects/, never edited. Left out on purpose: screens showing a third
- * party's email address, and the evidence view that is mostly game footage.
+ * The Gallery's exhibits: one per project, shown in whichever collections list it (see
+ * collections.ts). Names, years, credits and links come from the portfolio's projects.ts, so
+ * facts stay in one place; this file only chooses the real screenshots each exhibit shows and
+ * a few headline technologies. Every image is an original file in /public/image/projects/,
+ * never edited. Left out on purpose: screens showing a third party's email address, and the
+ * evidence view that is mostly game footage.
  */
 
 export interface GalleryShot {
@@ -55,7 +56,7 @@ const AS = 'academic-sentinel';
 const PM = 'prematch-tracker';
 const SS = 'spendsync';
 
-export const galleryProjects: GalleryProject[] = [
+export const exhibits: GalleryProject[] = [
   exhibit(
     AS,
     shot(AS, 'student-monitoring.png', 1386, 813,
@@ -107,6 +108,14 @@ export const galleryProjects: GalleryProject[] = [
   ),
 ];
 
-/** "01 / 03". */
-export const exhibitNumber = (index: number) =>
-  `${String(index + 1).padStart(2, '0')} / ${String(galleryProjects.length).padStart(2, '0')}`;
+/** The exhibit for a project, by its slug. */
+export function getExhibit(slug: string): GalleryProject {
+  const exhibit = exhibits.find((e) => e.slug === slug);
+  if (!exhibit) throw new Error(`No Gallery exhibit for "${slug}"`);
+  return exhibit;
+}
+
+const two = (n: number) => String(n).padStart(2, '0');
+
+/** "01 / 03": a project's place in its collection. */
+export const exhibitNumber = (index: number, total: number) => `${two(index + 1)} / ${two(total)}`;

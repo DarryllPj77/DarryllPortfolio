@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { galleryProjects } from '../gallery/data';
+import { exhibits } from '../gallery/data';
 import { createFaceGeometry, hexCorners } from '../gallery/scene/hexGeometry';
 import { FACING_SHARE, HEX_RADIUS, ORBIT_RADIUS, RECEDE } from '../gallery/scene/layout';
 import { framingDistance, framingLift, placeOnRing } from '../gallery/scene/placement';
@@ -20,7 +20,7 @@ describe('hexagonal display case', () => {
   });
 
   it('fills its screen with the screenshot like object-fit: cover, around the focal point, inside the image', () => {
-    for (const g of galleryProjects) {
+    for (const g of exhibits) {
       const uv = createFaceGeometry(g.cover, g.focus).getAttribute('uv');
       const us = Array.from({ length: uv.count }, (_, i) => uv.getX(i));
       const vs = Array.from({ length: uv.count }, (_, i) => uv.getY(i));
@@ -43,25 +43,25 @@ describe('hexagonal display case', () => {
 
 describe('the ring', () => {
   it('puts case 0 in front of the camera and the others 120° round, each turned partly toward the visitor', () => {
-    const front = placeOnRing(0, 0, 1);
+    const front = placeOnRing(0, 0, 1, 3);
     close(front.x, 0);
     close(front.z, ORBIT_RADIUS);
     close(front.yaw, 0);
-    const right = placeOnRing(1, 0, 1);
+    const right = placeOnRing(1, 0, 1, 3);
     close(Math.atan2(right.x, right.z), (2 * Math.PI) / 3);
     close(right.yaw, ((2 * Math.PI) / 3) * FACING_SHARE);
     // Case 2 sits at −120°, not +240°: it turns the short way.
-    close(placeOnRing(2, 0, 1).yaw, ((-2 * Math.PI) / 3) * FACING_SHARE);
+    close(placeOnRing(2, 0, 1, 3).yaw, ((-2 * Math.PI) / 3) * FACING_SHARE);
   });
 
   it('turns as one: a third of a turn brings the next case to the front', () => {
-    const p = placeOnRing(1, (-2 * Math.PI) / 3, 1);
+    const p = placeOnRing(1, (-2 * Math.PI) / 3, 1, 3);
     close(p.x, 0);
     close(p.z, ORBIT_RADIUS);
   });
 
   it('steps an inactive case back along its radius', () => {
-    const p = placeOnRing(0, 0, 0);
+    const p = placeOnRing(0, 0, 0, 3);
     close(p.z, ORBIT_RADIUS + RECEDE);
   });
 });

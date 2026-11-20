@@ -8,6 +8,8 @@ import styles from './Placard.module.css';
 interface PlacardProps {
   project: GalleryProject;
   index: number;
+  /** How many projects the collection holds. */
+  total: number;
   /** Opens the project's presentation (the same as choosing the case in front). */
   onOpen: () => void;
   openRef?: Ref<HTMLButtonElement>;
@@ -17,7 +19,7 @@ interface PlacardProps {
  * The museum placard under the front case: its number and name, and its links. When another
  * case comes to the front, the old name slides up behind a mask and the new one rises in.
  */
-export function Placard({ project, index, onOpen, openRef }: PlacardProps) {
+export function Placard({ project, index, total, onOpen, openRef }: PlacardProps) {
   return (
     // Named directly, not by the heading's id: while the name changes, the old and new headings
     // briefly both exist.
@@ -32,7 +34,7 @@ export function Placard({ project, index, onOpen, openRef }: PlacardProps) {
             exit={{ y: '-100%', opacity: 0 }}
             transition={{ duration: duration.base, ease: ease.out }}
           >
-            <p className={styles.number}>{exhibitNumber(index)}</p>
+            <p className={styles.number}>{exhibitNumber(index, total)}</p>
             <h2 className={styles.name}>
               {project.project.name}
             </h2>

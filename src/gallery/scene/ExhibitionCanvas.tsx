@@ -3,7 +3,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import type { GalleryProject } from '../data';
 import type { OrbitState } from '../orbit/OrbitState';
-import { useOrbitDrag } from '../orbit/useOrbitDrag';
+import { useOrbitDrag, type DragAxis } from '../orbit/useOrbitDrag';
 import type { ShowState } from '../show/ShowState';
 import { CameraRig } from './CameraRig';
 import { Hall } from './Hall';
@@ -11,12 +11,14 @@ import { Orbit } from './Orbit';
 import { FrameProbe, initialQuality, type Quality } from './quality';
 import styles from './ExhibitionCanvas.module.css';
 
-interface ExhibitionCanvasProps {
+export interface ExhibitionCanvasProps {
   projects: GalleryProject[];
   orbit: OrbitState;
   show: ShowState;
-  /** Whether the ring may be dragged now (only while browsing). */
+  /** Whether the exhibit may be dragged now (only while browsing). */
   canDrag: boolean;
+  /** Which way the hand moves to turn it. */
+  dragAxis: DragAxis;
   /** A case was clicked or tapped. */
   onSelect: (index: number) => void;
   /** The graphics context was lost or could not start: show the HTML exhibition instead. */
@@ -35,15 +37,19 @@ function Driver({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     const wake = () => invalidate();
-    orbit.setWake(wake);
-    show.setWake(wake);
+    const releaseOrbit = orbit.setWake(wake);
+    const releaseShow = show.setWake(wake);
     invalidate();
     return () => {
-      orbit.setWake(() => {});
-      show.setWake(() => {});
+      releaseOrbit();
+      releaseShow();
     };
   }, [orbit, show, invalidate]);
   useFrame((state, dt) => {
+    // Whichever canvas is drawing owns the wake. A canvas that is being replaced (or one React
+    // started and discarded) stops drawing, so it can never keep the wake from the live one.
+    orbit.setWake(state.invalidate);
+    show.setWake(state.invalidate);
     const ring = orbit.step(dt);
     const moment = show.step(dt);
     if (ring || moment) state.invalidate();
@@ -64,9 +70,17 @@ function QualityProbe({ onSlow }: { onSlow: () => void }) {
  * The 3D exhibition. It draws a frame only when something changes (`frameloop="demand"`).
  * Purely visual: the HTML controls carry the meaning, so it is hidden from screen readers.
  */
-export default function ExhibitionCanvas({ projects, orbit, show, canDrag, onSelect, onFail }: ExhibitionCanvasProps) {
+export default function ExhibitionCanvas({
+  projects,
+  orbit,
+  show,
+  canDrag,
+  dragAxis,
+  onSelect,
+  onFail,
+}: ExhibitionCanvasProps) {
   const stage = useRef<HTMLDivElement>(null);
-  useOrbitDrag(stage, orbit, canDrag);
+  useOrbitDrag(stage, orbit, canDrag, dragAxis);
   const [quality, setQuality] = useState<Quality>(initialQuality);
   const low = quality === 'low';
 

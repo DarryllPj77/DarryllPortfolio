@@ -10,6 +10,8 @@ import styles from './Presentation.module.css';
 interface PresentationProps {
   project: GalleryProject;
   index: number;
+  /** How many projects its collection holds. */
+  total: number;
   /** Where the 3D screen was on the page, to start the screenshot from; null to fade in. */
   from: ScreenRect | null;
   reduced: boolean;
@@ -44,7 +46,7 @@ function Screen({ shot, eager, imageRef }: { shot: GalleryShot; eager?: boolean;
  * Not a second case study: the screens are the point. The first screen arrives from the 3D
  * case itself, opening out of the hexagon into its full rectangle.
  */
-export function Presentation({ project, index, from, reduced, leaving, onBack, onExited }: PresentationProps) {
+export function Presentation({ project, index, total, from, reduced, leaving, onBack, onExited }: PresentationProps) {
   const overlay = useRef<HTMLDivElement>(null);
   const hero = useRef<HTMLImageElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -116,7 +118,7 @@ export function Presentation({ project, index, from, reduced, leaving, onBack, o
         <div ref={rest}>
           <header className={styles.header}>
             <div className={styles.identity}>
-              <p className={styles.number}>{exhibitNumber(index)}</p>
+              <p className={styles.number}>{exhibitNumber(index, total)}</p>
               <h2 id={titleId} ref={heading} tabIndex={-1} className={styles.title}>
                 {p.name}
               </h2>

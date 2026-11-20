@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { TURN } from '../gallery/orbit/orbitPhysics';
+import { collections } from '../gallery/collections';
+import { turnFor } from '../gallery/orbit/orbitPhysics';
 import { ENTRANCE, entrancePose, OPENING, openingPose } from '../gallery/show/choreography';
 import { formatHash, parseHash } from '../gallery/show/hash';
+
+const N = 3;
+const TURN = turnFor(N);
 import { ShowState } from '../gallery/show/ShowState';
 import { FULL_CLIP, handoffFrom } from '../gallery/ui/handoff';
 
@@ -11,7 +15,7 @@ const run = (show: ShowState, seconds: number) => {
 
 describe('the entrance', () => {
   it('starts dark, with the cases deep in the hall and the ring turned away', () => {
-    const p = entrancePose(0);
+    const p = entrancePose(0, N);
     expect(p.hall).toBe(0);
     expect(p.lamp).toBe(0);
     expect(p.turn).toBeCloseTo(TURN * 0.5, 9);
@@ -20,23 +24,23 @@ describe('the entrance', () => {
   });
 
   it('ends lit and settled, with the placard showing', () => {
-    expect(entrancePose(1)).toEqual({ hall: 1, lamp: 1, turn: 0, depth: [0, 0, 0], ui: true });
+    expect(entrancePose(1, N)).toEqual({ hall: 1, lamp: 1, turn: 0, depth: [0, 0, 0], ui: true });
   });
 
   it('brings the cases in one after another', () => {
-    const mid = entrancePose(0.3).depth;
+    const mid = entrancePose(0.3, N).depth;
     expect(mid[0]).toBeLessThan(mid[1]);
     expect(mid[1]).toBeLessThan(mid[2]);
   });
 
   it('lights the spotlight last, after the ring has settled', () => {
-    expect(entrancePose(0.6).lamp).toBe(0);
-    expect(entrancePose(0.75).turn).toBeCloseTo(0, 9);
+    expect(entrancePose(0.6, N).lamp).toBe(0);
+    expect(entrancePose(0.75, N).turn).toBeCloseTo(0, 9);
   });
 
   it('with reduced motion only fades the light up: nothing travels or turns', () => {
     for (const t of [0, 0.3, 0.7, 1]) {
-      const p = entrancePose(t, true);
+      const p = entrancePose(t, N, true);
       expect(p.turn).toBe(0);
       expect(p.depth).toEqual([0, 0, 0]);
     }
@@ -63,7 +67,7 @@ describe('opening a project', () => {
 
 describe('ShowState', () => {
   it('plays the entrance, then lets the visitor browse', () => {
-    const show = new ShowState();
+    const show = new ShowState({ count: N });
     expect(show.getPhase()).toBe('entering');
     run(show, ENTRANCE.full + 0.1);
     expect(show.getPhase()).toBe('browsing');
@@ -72,14 +76,14 @@ describe('ShowState', () => {
   });
 
   it('skips the entrance on request', () => {
-    const show = new ShowState();
+    const show = new ShowState({ count: N });
     show.skipEntrance();
     run(show, 0.05);
     expect(show.getPhase()).toBe('browsing');
   });
 
   it('opens a case, hands over to the page when the camera arrives, and closes back to browsing', () => {
-    const show = new ShowState({ entrance: 'short' });
+    const show = new ShowState({ count: N, entrance: 'short' });
     run(show, ENTRANCE.short + 0.1);
     const phases: string[] = [];
     show.subscribe(() => phases.push(show.getPhase()));
@@ -99,7 +103,7 @@ describe('ShowState', () => {
   });
 
   it('opening during the entrance finishes it first, then opens', () => {
-    const show = new ShowState();
+    const show = new ShowState({ count: N });
     show.openCase(1);
     run(show, OPENING.open + 0.2);
     expect(show.getPhase()).toBe('open');
@@ -107,13 +111,13 @@ describe('ShowState', () => {
   });
 
   it('ignores closing when nothing is open', () => {
-    const show = new ShowState();
+    const show = new ShowState({ count: N });
     show.closeCase();
     expect(show.getPhase()).toBe('entering');
   });
 
   it('can start with a project already open, from its own link', () => {
-    const show = new ShowState({ startOpen: true, opened: 1 });
+    const show = new ShowState({ count: N, startOpen: true, opened: 1 });
     expect(show.getPhase()).toBe('open');
     expect(show.opened).toBe(1);
     expect(show.approach).toBe(1);
@@ -121,18 +125,49 @@ describe('ShowState', () => {
 });
 
 describe('the address', () => {
-  const slugs = ['academic-sentinel', 'prematch-tracker', 'spendsync'];
-
-  it('names the project in front, and whether it is open', () => {
-    expect(parseHash('#prematch-tracker', slugs)).toEqual({ index: 1, open: false });
-    expect(parseHash('#spendsync/open', slugs)).toEqual({ index: 2, open: true });
-    expect(formatHash('spendsync', true)).toBe('#spendsync/open');
-    expect(formatHash('academic-sentinel', false)).toBe('#academic-sentinel');
+  it('names the lobby, a collection, the project in front, and whether it is open', () => {
+    expect(parseHash('', collections)).toEqual({ view: 'lobby' });
+    expect(parseHash('#/', collections)).toEqual({ view: 'lobby' });
+    expect(parseHash('#/3-best-projects', collections)).toEqual({
+      view: 'collection',
+      collection: '3-best-projects',
+      index: null,
+      open: false,
+    });
+    expect(parseHash('#/3-best-projects/prematch-tracker', collections)).toEqual({
+      view: 'collection',
+      collection: '3-best-projects',
+      index: 1,
+      open: false,
+    });
+    expect(parseHash('#/3-best-projects/spendsync/open', collections)).toEqual({
+      view: 'collection',
+      collection: '3-best-projects',
+      index: 2,
+      open: true,
+    });
   });
 
-  it('ignores an empty or unknown address', () => {
-    expect(parseHash('', slugs)).toEqual({ index: null, open: false });
-    expect(parseHash('#nope/open', slugs)).toEqual({ index: null, open: false });
+  it('writes the same addresses back', () => {
+    expect(formatHash()).toBe('#/');
+    expect(formatHash('3-best-projects')).toBe('#/3-best-projects');
+    expect(formatHash('3-best-projects', 'spendsync', true)).toBe('#/3-best-projects/spendsync/open');
+  });
+
+  it('keeps links from the earlier Gallery working', () => {
+    expect(parseHash('#prematch-tracker', collections)).toEqual({
+      view: 'collection',
+      collection: '3-best-projects',
+      index: 1,
+      open: false,
+    });
+    expect(parseHash('#spendsync/open', collections)).toMatchObject({ index: 2, open: true });
+  });
+
+  it('falls back to the lobby for an unknown collection, and to the first project for an unknown one', () => {
+    expect(parseHash('#/nope/open', collections)).toEqual({ view: 'lobby' });
+    expect(parseHash('#nope', collections)).toEqual({ view: 'lobby' });
+    expect(parseHash('#/3-best-projects/nope', collections)).toMatchObject({ index: null, open: false });
   });
 });
 

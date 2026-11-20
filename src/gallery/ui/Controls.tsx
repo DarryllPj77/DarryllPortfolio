@@ -34,7 +34,7 @@ export function Controls({ projects, active, onPrevious, onNext, onChoose }: Con
             onClick={() => onChoose(i)}
           >
             <span className="visually-hidden">
-              {exhibitNumber(i)}, {p.project.name}
+              {exhibitNumber(i, count)}, {p.project.name}
             </span>
           </button>
         ))}

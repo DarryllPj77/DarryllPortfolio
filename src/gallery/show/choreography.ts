@@ -3,7 +3,7 @@
  * everything should be. No timers here; the scene's frame loop supplies the time. That keeps
  * every moment exact, reversible (closing is opening played backwards) and testable.
  */
-import { COUNT, TURN } from '../orbit/orbitPhysics';
+import { turnFor } from '../orbit/orbitPhysics';
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 /** Progress of a step that runs from `start` to `end` (both 0…1 of the whole moment). */
@@ -44,16 +44,16 @@ export interface EntrancePose {
  * - 69–94%: the spotlight finds the front case; the placard appears.
  * With reduced motion nothing travels: the hall and the light simply fade up.
  */
-export function entrancePose(t: number, reduced = false): EntrancePose {
+export function entrancePose(t: number, count: number, reduced = false): EntrancePose {
   if (reduced) {
     const f = easeOut(clamp01(t));
-    return { hall: f, lamp: f, turn: 0, depth: Array(COUNT).fill(0), ui: t >= 0.5 };
+    return { hall: f, lamp: f, turn: 0, depth: Array(count).fill(0), ui: t >= 0.5 };
   }
   return {
     hall: easeOut(span(t, 0, 0.19)),
     lamp: easeOut(span(t, 0.69, 0.94)),
-    turn: (1 - easeOut(span(t, 0.44, 0.75))) * TURN * 0.5,
-    depth: Array.from({ length: COUNT }, (_, i) => (1 - easeOut(span(t, 0.12 + i * 0.07, 0.42 + i * 0.09))) * 16),
+    turn: (1 - easeOut(span(t, 0.44, 0.75))) * turnFor(count) * 0.5,
+    depth: Array.from({ length: count }, (_, i) => (1 - easeOut(span(t, 0.12 + i * 0.07, 0.42 + i * 0.09))) * 16),
     ui: t >= 0.72,
   };
 }

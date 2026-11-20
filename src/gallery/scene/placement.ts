@@ -1,8 +1,6 @@
 import { MathUtils } from 'three';
+import { turnFor } from '../orbit/orbitPhysics';
 import { FACING_SHARE, HEX_HALF_HEIGHT, HEX_RADIUS, ORBIT_RADIUS, RECEDE } from './layout';
-
-/** A third of a turn: the cases stand 120° apart. */
-export const TURN = (Math.PI * 2) / 3;
 
 /** An angle folded into −π … π. */
 export const fold = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -19,8 +17,14 @@ export interface Placement {
  * the camera). `emphasis` 1 keeps a case on the ring, 0 steps it back by RECEDE. Each case
  * turns only part of the way with the ring, so the side cases still show their screens.
  */
-export function placeOnRing(index: number, ringAngle: number, emphasis: number, withdraw = 0): Placement {
-  const angle = fold(index * TURN + ringAngle);
+export function placeOnRing(
+  index: number,
+  ringAngle: number,
+  emphasis: number,
+  count: number,
+  withdraw = 0,
+): Placement {
+  const angle = fold(index * turnFor(count) + ringAngle);
   const radius = ORBIT_RADIUS + RECEDE * (1 - emphasis) + withdraw;
   return { x: Math.sin(angle) * radius, z: Math.cos(angle) * radius, yaw: angle * FACING_SHARE };
 }

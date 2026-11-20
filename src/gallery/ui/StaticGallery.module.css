@@ -105,3 +105,23 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Each collection: its number and name above its projects. */
+.collection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.collection + .collection {
+  margin-top: calc(var(--space-8) * 1.5);
+}
+
+.collectionName {
+  margin-bottom: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--fs-lg);
+  font-weight: 500;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hall-ink);
+}

@@ -1,8 +1,11 @@
 import { useEffect, type RefObject } from 'react';
 import type { OrbitState } from './OrbitState';
-import { TURN } from './orbitPhysics';
+import { turnFor } from './orbitPhysics';
 
-/** A press must move this far (px) sideways before it becomes a drag; less is a click or tap. */
+/** Which way the hand moves to turn the exhibit: sideways for a ring, up and down for a wheel. */
+export type DragAxis = 'x' | 'y';
+
+/** A press must move this far (px) along the axis before it becomes a drag; less is a click or tap. */
 const DRAG_START = 6;
 /** Release speed is measured over the last moments of the drag. */
 const SAMPLE_MS = 90;
@@ -13,7 +16,12 @@ const SAMPLE_MS = 90;
  * settle. Movement after the press is followed on the window, so a drag that leaves the
  * stage still ends cleanly, and the scene's own click handling keeps working.
  */
-export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitState, enabled = true) {
+export function useOrbitDrag(
+  stage: RefObject<HTMLElement | null>,
+  orbit: OrbitState,
+  enabled = true,
+  axis: DragAxis = 'x',
+) {
   useEffect(() => {
     const el = stage.current;
     // Only while browsing: not during the entrance, nor behind an open project.
@@ -29,9 +37,11 @@ export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitS
       el.style.cursor = c;
     };
 
+    const along = (e: PointerEvent) => (axis === 'x' ? e.clientX : e.clientY);
+
     const onMove = (e: PointerEvent) => {
       if (!pressing) return;
-      const dx = e.clientX - startX;
+      const dx = along(e) - startX;
       if (!dragging && Math.abs(dx) > DRAG_START) {
         dragging = true;
         orbit.beginDrag();
@@ -40,7 +50,7 @@ export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitS
       if (!dragging) return;
       orbit.dragBy(dx * radPerPx);
       const t = performance.now();
-      samples.push({ x: e.clientX, t });
+      samples.push({ x: along(e), t });
       samples = samples.filter((s) => t - s.t <= SAMPLE_MS);
     };
 
@@ -63,10 +73,11 @@ export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitS
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 || !e.isPrimary) return;
       pressing = true;
-      startX = e.clientX;
-      samples = [{ x: e.clientX, t: performance.now() }];
-      // Half the stage's width (within sensible limits) turns the ring by one case.
-      radPerPx = TURN / (Math.min(1200, Math.max(320, el.clientWidth)) * 0.5);
+      startX = along(e);
+      samples = [{ x: startX, t: performance.now() }];
+      // Half the stage's size along the axis (within sensible limits) turns it by one case.
+      const span = axis === 'x' ? el.clientWidth : el.clientHeight;
+      radPerPx = turnFor(orbit.count) / (Math.min(1200, Math.max(320, span)) * 0.5);
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', finish);
       window.addEventListener('pointercancel', finish);
@@ -79,5 +90,5 @@ export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitS
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
     };
-  }, [stage, orbit, enabled]);
+  }, [stage, orbit, enabled, axis]);
 }

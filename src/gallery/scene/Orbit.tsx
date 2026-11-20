@@ -131,7 +131,7 @@ export function Orbit({ projects, orbit, show, quality, onSelect, onHover }: Orb
 
   useFrame((state) => {
     for (let i = 0; i < projects.length; i++) {
-      const p = placeOnRing(i, orbit.angle + show.turn, orbit.emphasis[i], show.withdraw[i]);
+      const p = placeOnRing(i, orbit.angle + show.turn, orbit.emphasis[i], projects.length, show.withdraw[i]);
       // During the entrance each case still has some way to come from deep in the hall.
       const z = p.z - show.depth[i];
       for (const g of [cases.current[i], reflections.current[i]]) {

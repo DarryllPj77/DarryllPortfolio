@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { certifications } from '../data/certifications';
 import { projects } from '../data/projects';
-import { galleryProjects } from '../gallery/data';
+import { exhibits } from '../gallery/data';
 
 /**
  * Vercel builds from the repository, so an image that exists on this machine but was never
@@ -19,7 +19,7 @@ function trackedFiles(): Set<string> | null {
 }
 
 const used = [
-  ...galleryProjects.flatMap((g) => [g.cover, ...g.screens]).map((s) => s.src),
+  ...exhibits.flatMap((g) => [g.cover, ...g.screens]).map((s) => s.src),
   ...projects.flatMap((p) => [
     ...(p.hero ? [p.hero.src] : []),
     ...(p.chapters ?? []).flatMap((c) => c.blocks.flatMap((b) => b.shots.map((s) => s.src))),
