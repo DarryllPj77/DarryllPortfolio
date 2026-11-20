@@ -74,16 +74,15 @@ export function Orbit({ projects, orbit, show, quality, onSelect, onHover }: Orb
     invalidate();
   }, [textures, gl, invalidate]);
   // Leaving the scene (the page closing, or the HTML exhibition taking over after a lost
-  // graphics context) releases the screenshots from the graphics memory and the loader's cache.
+  // graphics context) releases the screenshots from graphics memory. The loader's cache is
+  // deliberately kept: clearing it made the next re-render (every change of project) reload
+  // the screenshots, and the scene drew nothing while it did, so the cases blinked out. A
+  // released texture that is drawn again is simply uploaded again.
   useEffect(
     () => () => {
       for (const t of textures) t.dispose();
-      useLoader.clear(
-        TextureLoader,
-        projects.map((p) => p.cover.src),
-      );
     },
-    [textures, projects],
+    [textures],
   );
 
   const parts = useMemo<SharedExhibitParts>(
