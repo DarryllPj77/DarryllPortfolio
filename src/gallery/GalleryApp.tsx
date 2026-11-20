@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExtern
 import { duration, ease } from '../motion/tokens';
 import { exhibitNumber, galleryProjects } from './data';
 import { OrbitState } from './orbit/OrbitState';
+import { SceneErrorBoundary } from './scene/SceneErrorBoundary';
 import { formatHash, parseHash } from './show/hash';
 import { ShowState } from './show/ShowState';
 import { Controls } from './ui/Controls';
@@ -228,16 +229,20 @@ export function GalleryApp() {
       <h1 className="visually-hidden">After Hours: a gallery of three projects</h1>
       {/* Behind an open project, the exhibition can't be reached or read. */}
       <div inert={isOpen}>
-        <Suspense fallback={null}>
-          <ExhibitionCanvas
-            projects={galleryProjects}
-            orbit={orbit}
-            show={show}
-            canDrag={phase === 'browsing'}
-            onSelect={select}
-            onFail={() => setWebgl(false)}
-          />
-        </Suspense>
+        {/* Any failure in the 3D scene (a screenshot that won't load, the 3D code not arriving)
+            shows the HTML exhibition instead of a blank page. */}
+        <SceneErrorBoundary onError={() => setWebgl(false)}>
+          <Suspense fallback={null}>
+            <ExhibitionCanvas
+              projects={galleryProjects}
+              orbit={orbit}
+              show={show}
+              canDrag={phase === 'browsing'}
+              onSelect={select}
+              onFail={() => setWebgl(false)}
+            />
+          </Suspense>
+        </SceneErrorBoundary>
         <AnimatePresence>
           {ui ? (
             <motion.div
