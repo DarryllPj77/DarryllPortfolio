@@ -18,6 +18,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import type { OrbitState } from '../orbit/OrbitState';
 import type { ShowState } from '../show/ShowState';
 import { createFloorTexture } from './hallTextures';
+import type { Quality } from './quality';
 import { EXHIBIT_Y, HALL_COLOUR, ORBIT_RADIUS } from './layout';
 
 /** The exhibit light hangs above and in front of the front position and stays there. */
@@ -42,7 +43,7 @@ const lampLevel = (orbit: OrbitState) => 0.55 + 0.45 * Math.max(...orbit.emphasi
  * environment for the metal's reflections, and three lights: a low ambient fill, the warm
  * exhibit spotlight fixed over the front position, and a cool rim light from behind.
  */
-export function Hall({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
+export function Hall({ orbit, show, quality }: { orbit: OrbitState; show: ShowState; quality: Quality }) {
   // Three.js objects are changed in place; they are read from the store when needed.
   const get = useThree((s) => s.get);
 
@@ -126,7 +127,7 @@ export function Hall({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
         />
       </mesh>
 
-      <LightBeam orbit={orbit} show={show} />
+      {quality === 'high' ? <LightBeam orbit={orbit} show={show} /> : null}
     </>
   );
 }

@@ -9,6 +9,7 @@ import { createBodyGeometry, createEdgeGeometry } from './hexGeometry';
 import { createShadowTexture } from './hallTextures';
 import { EXHIBIT_Y, FACE_RADIUS, HEX_FRONT_Z } from './layout';
 import { placeOnRing } from './placement';
+import type { Quality } from './quality';
 import { prepareScreenshots } from './textures';
 
 /** A press that moved further than this (in pixels) was a drag, not a click. */
@@ -47,6 +48,8 @@ interface OrbitProps {
   projects: GalleryProject[];
   orbit: OrbitState;
   show: ShowState;
+  /** "low" leaves out the floor reflection and the glass sheen. */
+  quality: Quality;
   /** A case was clicked: a side case comes to the front; the front case opens (phase 4). */
   onSelect: (index: number) => void;
   /** The pointer is over a case, or has left all of them. */
@@ -57,7 +60,8 @@ interface OrbitProps {
  * The three display cases on their ring, each with its floor shadow and its reflection.
  * Every frame they are placed from the ring's live state, so turning costs no React render.
  */
-export function Orbit({ projects, orbit, show, onSelect, onHover }: OrbitProps) {
+export function Orbit({ projects, orbit, show, quality, onSelect, onHover }: OrbitProps) {
+  const high = quality === 'high';
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const textures = useLoader(
@@ -69,6 +73,18 @@ export function Orbit({ projects, orbit, show, onSelect, onHover }: OrbitProps) 
     // The hall draws on demand: show the screenshots as soon as they are ready.
     invalidate();
   }, [textures, gl, invalidate]);
+  // Leaving the scene (the page closing, or the HTML exhibition taking over after a lost
+  // graphics context) releases the screenshots from the graphics memory and the loader's cache.
+  useEffect(
+    () => () => {
+      for (const t of textures) t.dispose();
+      useLoader.clear(
+        TextureLoader,
+        projects.map((p) => p.cover.src),
+      );
+    },
+    [textures, projects],
+  );
 
   const parts = useMemo<SharedExhibitParts>(
     () => ({
@@ -165,11 +181,12 @@ export function Orbit({ projects, orbit, show, onSelect, onHover }: OrbitProps) 
             orbit={orbit}
             show={show}
             index={i}
+            glass={high}
           />
         </group>
       ))}
       {/* The floor's reflection: the same cases, mirrored below it, seen through its gloss. */}
-      <group scale-y={-1}>
+      <group scale-y={-1} visible={high}>
         {projects.map((project, i) => (
           <group
             key={`reflection-${project.slug}`}

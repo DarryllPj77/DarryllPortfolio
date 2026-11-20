@@ -1,5 +1,5 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { ACESFilmicToneMapping } from 'three';
 import type { GalleryProject } from '../data';
 import type { OrbitState } from '../orbit/OrbitState';
@@ -8,6 +8,7 @@ import type { ShowState } from '../show/ShowState';
 import { CameraRig } from './CameraRig';
 import { Hall } from './Hall';
 import { Orbit } from './Orbit';
+import { FrameProbe, initialQuality, type Quality } from './quality';
 import styles from './ExhibitionCanvas.module.css';
 
 interface ExhibitionCanvasProps {
@@ -50,6 +51,15 @@ function Driver({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
   return null;
 }
 
+/** Measures frames while the hall moves and reports once if this device needs the lighter hall. */
+function QualityProbe({ onSlow }: { onSlow: () => void }) {
+  const probe = useRef(new FrameProbe());
+  useFrame(() => {
+    if (probe.current.frame(performance.now()) === 'low') onSlow();
+  });
+  return null;
+}
+
 /**
  * The 3D exhibition. It draws a frame only when something changes (`frameloop="demand"`).
  * Purely visual: the HTML controls carry the meaning, so it is hidden from screen readers.
@@ -57,6 +67,8 @@ function Driver({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
 export default function ExhibitionCanvas({ projects, orbit, show, canDrag, onSelect, onFail }: ExhibitionCanvasProps) {
   const stage = useRef<HTMLDivElement>(null);
   useOrbitDrag(stage, orbit, canDrag);
+  const [quality, setQuality] = useState<Quality>(initialQuality);
+  const low = quality === 'low';
 
   // A context lost while the scene is mounted counts as a failure; React Three Fiber's own
   // release of the context on unmount does not, so the listener goes when the scene does.
@@ -74,10 +86,16 @@ export default function ExhibitionCanvas({ projects, orbit, show, canDrag, onSel
   };
 
   return (
-    <div ref={stage} className={styles.stage} data-browsing={canDrag || undefined} aria-hidden="true">
+    <div
+      ref={stage}
+      className={styles.stage}
+      data-browsing={canDrag || undefined}
+      data-quality={quality}
+      aria-hidden="true"
+    >
       <Canvas
         frameloop="demand"
-        dpr={[1, maxDpr()]}
+        dpr={low ? 1 : [1, maxDpr()]}
         camera={{ fov: 30, near: 0.1, far: 60 }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
@@ -90,11 +108,19 @@ export default function ExhibitionCanvas({ projects, orbit, show, canDrag, onSel
         }}
       >
         <Driver orbit={orbit} show={show} />
+        {low ? null : <QualityProbe onSlow={() => setQuality('low')} />}
         {/* The hall first: the camera rig measures its fog from where the camera stands. */}
-        <Hall orbit={orbit} show={show} />
+        <Hall orbit={orbit} show={show} quality={quality} />
         <CameraRig show={show} />
         <Suspense fallback={null}>
-          <Orbit projects={projects} orbit={orbit} show={show} onSelect={onSelect} onHover={setHoverCursor} />
+          <Orbit
+            projects={projects}
+            orbit={orbit}
+            show={show}
+            quality={quality}
+            onSelect={onSelect}
+            onHover={setHoverCursor}
+          />
         </Suspense>
       </Canvas>
     </div>

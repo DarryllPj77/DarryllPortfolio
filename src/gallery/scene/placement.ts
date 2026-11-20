@@ -31,7 +31,7 @@ export function placeOnRing(index: number, ringAngle: number, emphasis: number, 
  * placard below it.
  */
 const FRAME_W = HEX_RADIUS * 1.25;
-const FRAME_H = HEX_HALF_HEIGHT * 1.85;
+const FRAME_H = HEX_HALF_HEIGHT * 2.05;
 
 /**
  * Distance from the active case at which it fits the viewport: on a wide screen its height

@@ -65,9 +65,13 @@ export function releaseTarget(angle: number, velocity: number, startStop: number
 
 export const clampSpeed = (v: number) => Math.max(-MAX_SPEED, Math.min(MAX_SPEED, v));
 
+/** The longest frame the spring keeps time through; longer ones (a tab coming back) are cut to this. */
+export const MAX_FRAME_S = 0.25;
+
 /**
- * One step of the settling spring, integrated in small fixed sub-steps so a slow frame
- * (or a tab coming back) can never make it overshoot or explode.
+ * One step of the settling spring, integrated in small fixed sub-steps so a slow frame can
+ * never make it overshoot or explode. It keeps real time through slow frames (a slow device
+ * sees fewer frames of the same turn, not a turn in slow motion).
  */
 export function stepSpring(
   angle: number,
@@ -78,7 +82,7 @@ export function stepSpring(
 ): { angle: number; velocity: number } {
   let x = angle;
   let v = velocity;
-  let left = Math.min(dt, 1 / 20);
+  let left = Math.min(dt, MAX_FRAME_S);
   while (left > 1e-6) {
     const h = Math.min(left, 1 / 240);
     v += (spring.stiffness * (target - x) - spring.damping * v) * h;

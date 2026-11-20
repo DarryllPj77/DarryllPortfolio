@@ -66,6 +66,12 @@ describe('settling', () => {
     expect(s.angle).toBeCloseTo(TURN, 3);
   });
 
+  it('keeps time through slow frames: five frames a second still finish a turn on time', () => {
+    let s = { angle: 0, velocity: 0 };
+    for (let i = 0; i < 6; i++) s = stepSpring(s.angle, s.velocity, TURN, 0.2); // 1.2 s at 5 fps
+    expect(s.angle).toBeCloseTo(TURN, 2);
+  });
+
   it('never turns faster than its speed limit, even after a long frame', () => {
     const s = stepSpring(0, 0, 100 * TURN, 5);
     expect(Math.abs(s.velocity)).toBeLessThanOrEqual(MAX_SPEED);

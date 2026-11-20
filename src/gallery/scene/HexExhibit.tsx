@@ -25,6 +25,8 @@ interface HexExhibitProps {
   /** The moment under way: how much light it leaves this case. */
   show: ShowState;
   index: number;
+  /** The glass layer's sheen (left out on the lighter setting). */
+  glass?: boolean;
 }
 
 /**
@@ -32,7 +34,7 @@ interface HexExhibitProps {
  * hexagonal screen behind a thin layer of glass, and an indigo line that lights as the case
  * comes to the front.
  */
-export function HexExhibit({ parts, texture, image, focus, orbit, show, index }: HexExhibitProps) {
+export function HexExhibit({ parts, texture, image, focus, orbit, show, index, glass = false }: HexExhibitProps) {
   const faceGeometry = useMemo(() => createFaceGeometry(image, focus), [image, focus]);
   const faceMaterial = useMemo(() => createFaceMaterial(texture), [texture]);
   const edgeMaterial = useMemo(() => createEdgeMaterial(), []);
@@ -52,7 +54,7 @@ export function HexExhibit({ parts, texture, image, focus, orbit, show, index }:
     <group>
       <mesh geometry={parts.body} material={parts.bodyMaterial} />
       <mesh geometry={faceGeometry} material={faceMaterial} position-z={HEX_FRONT_Z + 0.002} />
-      <mesh geometry={faceGeometry} material={parts.glassMaterial} position-z={HEX_FRONT_Z + 0.012} />
+      {glass ? <mesh geometry={faceGeometry} material={parts.glassMaterial} position-z={HEX_FRONT_Z + 0.012} /> : null}
       <mesh geometry={parts.edge} material={edgeMaterial} position-z={HEX_FRONT_Z + 0.004} />
     </group>
   );
