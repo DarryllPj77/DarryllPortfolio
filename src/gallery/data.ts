@@ -1,5 +1,6 @@
 import { getProject } from '../data/projects';
 import type { Project, ProjectLink } from '../data/types';
+import type { FocalPoint } from './scene/hexGeometry';
 
 /*
  * The Gallery's three exhibits. Names, years, credits and links come from the portfolio's
@@ -22,6 +23,8 @@ export interface GalleryProject {
   project: Project;
   /** Shown on the exhibit, and first in the project's presentation. */
   cover: GalleryShot;
+  /** The part of the cover kept in view when it fills the hexagonal screen. */
+  focus: FocalPoint;
   /** The rest of the presentation, in order. */
   screens: GalleryShot[];
   /** At most four headline technologies, each one from the project's own stack. */
@@ -36,10 +39,16 @@ const shot = (folder: string, file: string, width: number, height: number, alt: 
   alt,
 });
 
-const exhibit = (slug: string, cover: GalleryShot, screens: GalleryShot[], stack: string[]): GalleryProject => {
+const exhibit = (
+  slug: string,
+  cover: GalleryShot,
+  focus: FocalPoint,
+  screens: GalleryShot[],
+  stack: string[],
+): GalleryProject => {
   const project = getProject(slug);
   if (!project) throw new Error(`No project "${slug}" for the Gallery`);
-  return { slug, project, cover, screens, stack, links: project.links };
+  return { slug, project, cover, focus, screens, stack, links: project.links };
 };
 
 const AS = 'academic-sentinel';
@@ -51,6 +60,7 @@ export const galleryProjects: GalleryProject[] = [
     AS,
     shot(AS, 'student-monitoring.png', 1386, 813,
       'Academic Sentinel Instructor Monitoring Console: participants on the left, a live log with idle and unauthorized-process violations in the middle, and a demonstration student’s details on the right showing 2 alerts and a Suspicious risk level.'),
+    { x: 0.58, y: 0.5 },
     [
       shot(AS, 'live-monitoring.png', 1386, 813,
         'Academic Sentinel Instructor Monitoring Console with monitoring active: the participants list on the left and the Global Log Feed on the right, showing a session start and two violations.'),
@@ -69,6 +79,7 @@ export const galleryProjects: GalleryProject[] = [
     PM,
     shot(PM, '01-manager-daily-attendance.jpg', 976, 1028,
       'PreMatch Tracker manager feed for a demo team: the roster, an attendance calendar marked with passed and failed days, and five player submissions for the day with their scores and a pass or fail result.'),
+    { x: 0.5, y: 0.42 },
     [
       shot(PM, '02-manager-player-performance.jpg', 976, 1174,
         'PreMatch Tracker submission inspector for one player: the day’s result marked attendance confirmed and passed, the targets it was checked against, and a score card for each deathmatch and range round.'),
@@ -83,6 +94,7 @@ export const galleryProjects: GalleryProject[] = [
     SS,
     shot(SS, 'spendsync-monthly-analytics-viewport.jpg', 1075, 780,
       'SpendSync Monthly Summary with demo data: total income, total expenses and all-time net, above a bar chart comparing income and expenses for each month from June to November 2026.'),
+    { x: 0.6, y: 0.5 },
     [
       shot(SS, 'spendsync-transaction-ledger.jpg', 1073, 778,
         'SpendSync transaction ledger with demo data: search and filters above a table of dated income and expenses, each with its category, payment method and running balance.'),

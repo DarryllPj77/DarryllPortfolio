@@ -1,0 +1,11 @@
+/* The hall fills the window behind the Gallery's HTML layer. */
+.stage {
+  position: fixed;
+  inset: 0;
+  background: var(--hall-bg);
+}
+
+.stage canvas {
+  display: block;
+  touch-action: none;
+}
