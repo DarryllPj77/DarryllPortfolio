@@ -8,7 +8,7 @@ import type { ShowState } from '../gallery/show/ShowState';
 // jsdom has no WebGL: say it does, and stand in for the 3D scene with a driver that advances
 // the real ring and the real entrance the way the scene's frame loop would.
 vi.mock('../gallery/webgl', () => ({ supportsWebGL: () => true }));
-vi.mock('../gallery/scene/ExhibitionCanvas', () => ({
+vi.mock('../gallery/scene/CollectionScene', () => ({
   default: function FakeScene({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
     useEffect(() => {
       const id = window.setInterval(() => {
@@ -20,6 +20,20 @@ vi.mock('../gallery/scene/ExhibitionCanvas', () => ({
       return () => window.clearInterval(id);
     }, [orbit, show]);
     return <div data-testid="scene" />;
+  },
+}));
+// The Gallery's canvas, as plain DOM: it draws whatever the views put through the tunnel.
+vi.mock('../gallery/scene/GalleryCanvas', async () => {
+  const { SceneTunnel } = await import('../gallery/scene/tunnel');
+  return { default: () => <SceneTunnel.Out /> };
+});
+// The lobby's 3D room: its camera "walks in" at once when a collection is entered.
+vi.mock('../gallery/scene/LobbyScene', () => ({
+  default: function FakeLobby({ entering, onEntered }: { entering: string | null; onEntered: (id: string) => void }) {
+    useEffect(() => {
+      if (entering) onEntered(entering);
+    }, [entering, onEntered]);
+    return <div data-testid="lobby-scene" />;
   },
 }));
 
@@ -180,20 +194,41 @@ describe('the lobby and the way between levels', () => {
     atLobby();
     render(<GalleryApp />);
     expect(screen.getByText('One collection on view')).toBeInTheDocument();
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['3 Best Projects']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['My 3 Best Projects']);
     expect(screen.getByText(/3 works/)).toHaveTextContent('Academic Sentinel, PreMatch Tracker, SpendSync');
     expect(screen.queryByTestId('scene')).not.toBeInTheDocument(); // no 3D until a collection is entered
     expect(within(bar()).getByText('After Hours')).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('turns the orbit through the reserved places too, which have nothing to enter yet', async () => {
+    const user = userEvent.setup();
+    atLobby();
+    render(<GalleryApp />);
+    const name = () => screen.getByRole('heading', { level: 2 }).textContent;
+    await user.click(screen.getByRole('button', { name: 'Next collection' }));
+    expect(name()).toBe('Coming soon');
+    expect(screen.getByText('Collection 02')).toBeInTheDocument();
+    expect(screen.getByText('Not open yet')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^enter/i })).not.toBeInTheDocument();
+    // Back the other way, and round the whole orbit with the arrow keys.
+    await user.click(screen.getByRole('button', { name: 'Previous collection' }));
+    expect(name()).toBe('My 3 Best Projects');
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByText('Collection 07')).toBeInTheDocument();
+    // A full circle comes back to 07; one more is the collection again.
+    for (let i = 0; i < 8; i++) await user.keyboard('{ArrowRight}');
+    expect(screen.getByText('Collection 01')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enter my 3 best projects/i })).toBeInTheDocument();
   });
 
   it('enters the collection, with its own address and a way back to the lobby', async () => {
     const user = userEvent.setup();
     atLobby();
     render(<GalleryApp />);
-    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await user.click(screen.getByRole('button', { name: /enter my 3 best projects/i }));
     await screen.findByRole('navigation', { name: 'Exhibition' });
     expect(window.location.hash).toBe('#/3-best-projects');
-    expect(within(bar()).getByText('3 Best Projects')).toHaveAttribute('aria-current', 'page');
+    expect(within(bar()).getByText('My 3 Best Projects')).toHaveAttribute('aria-current', 'page');
     await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
     await screen.findByText('One collection on view');
     expect(window.location.hash).toBe('');
@@ -212,13 +247,13 @@ describe('the lobby and the way between levels', () => {
     const user = userEvent.setup();
     atLobby();
     render(<GalleryApp />);
-    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await user.click(screen.getByRole('button', { name: /enter my 3 best projects/i }));
     await screen.findByRole('navigation', { name: 'Exhibition' });
     await user.keyboard('{ArrowRight}');
     await waitFor(() => expect(placardName()).toBe('PreMatch Tracker'));
     await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
     await screen.findByText('One collection on view');
-    await user.click(screen.getByRole('button', { name: /enter 3 best projects/i }));
+    await user.click(screen.getByRole('button', { name: /enter my 3 best projects/i }));
     await screen.findByRole('navigation', { name: 'Exhibition' });
     expect(placardName()).toBe('PreMatch Tracker');
   });

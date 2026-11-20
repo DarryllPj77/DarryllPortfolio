@@ -12,8 +12,12 @@ const span = (t: number, start: number, end: number) => clamp01((t - start) / (e
 export const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 export const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-/** Entrance length, in seconds: the full arrival once per tab, a short one after, a fade with reduced motion. */
+/**
+ * Entrance length, in seconds: the full arrival once per tab, a short one after (and on stepping
+ * in from the lobby), and a fade with reduced motion.
+ */
 export const ENTRANCE = { full: 3.2, short: 0.8, reduced: 0.3 } as const;
+export type EntranceKind = keyof typeof ENTRANCE;
 /** Opening and closing a project, in seconds. */
 export const OPENING = { open: 0.8, close: 0.6, reduced: 0.25 } as const;
 /**

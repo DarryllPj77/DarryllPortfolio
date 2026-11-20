@@ -14,7 +14,9 @@ const SAMPLE_MS = 90;
  * Mouse, pen and touch dragging on the stage: the ring follows the hand sideways (half the
  * stage's width turns it by one case) and, on release, carries the hand's speed into its
  * settle. Movement after the press is followed on the window, so a drag that leaves the
- * stage still ends cleanly, and the scene's own click handling keeps working.
+ * stage still ends cleanly, and the scene's own click handling keeps working. Presses are
+ * picked up on the window too (those over the stage), so dragging works whenever the lazily
+ * loaded stage arrives.
  */
 export function useOrbitDrag(
   stage: RefObject<HTMLElement | null>,
@@ -23,9 +25,9 @@ export function useOrbitDrag(
   axis: DragAxis = 'x',
 ) {
   useEffect(() => {
-    const el = stage.current;
     // Only while browsing: not during the entrance, nor behind an open project.
-    if (!el || !enabled) return;
+    if (!enabled) return;
+    let el: HTMLElement | null = null;
 
     let startX = 0;
     let pressing = false;
@@ -34,7 +36,7 @@ export function useOrbitDrag(
     let samples: { x: number; t: number }[] = [];
 
     const setCursor = (c: string) => {
-      el.style.cursor = c;
+      if (el) el.style.cursor = c;
     };
 
     const along = (e: PointerEvent) => (axis === 'x' ? e.clientX : e.clientY);
@@ -71,7 +73,9 @@ export function useOrbitDrag(
     };
 
     const onDown = (e: PointerEvent) => {
-      if (e.button !== 0 || !e.isPrimary) return;
+      const target = stage.current;
+      if (e.button !== 0 || !e.isPrimary || !target || !(e.target instanceof Node) || !target.contains(e.target)) return;
+      el = target;
       pressing = true;
       startX = along(e);
       samples = [{ x: startX, t: performance.now() }];
@@ -83,9 +87,9 @@ export function useOrbitDrag(
       window.addEventListener('pointercancel', finish);
     };
 
-    el.addEventListener('pointerdown', onDown);
+    window.addEventListener('pointerdown', onDown);
     return () => {
-      el.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointerdown', onDown);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);

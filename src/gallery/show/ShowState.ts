@@ -1,4 +1,4 @@
-import { ENTRANCE, entrancePose, HANDOFF, OPENING, openingPose } from './choreography';
+import { ENTRANCE, entrancePose, HANDOFF, OPENING, openingPose, type EntranceKind } from './choreography';
 
 /** What the page is doing. */
 export type Phase = 'entering' | 'browsing' | 'opening' | 'open' | 'closing';
@@ -53,12 +53,12 @@ export class ShowState {
 
   constructor({
     count,
-    entrance = 'full' as keyof typeof ENTRANCE,
+    entrance = 'full' as EntranceKind,
     startOpen = false,
     opened = 0,
   }: {
     count: number;
-    entrance?: keyof typeof ENTRANCE;
+    entrance?: EntranceKind;
     startOpen?: boolean;
     opened?: number;
   }) {

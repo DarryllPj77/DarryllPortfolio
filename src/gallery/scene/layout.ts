@@ -18,28 +18,27 @@ export const HEX_FRONT_Z = HEX_DEPTH / 2 + HEX_BEVEL;
 
 /* ---------- The wheel ---------- */
 
-/** From the axle to the centre of each cabin (each display case rides the wheel as a cabin). */
-export const WHEEL_RADIUS = 3.3;
-/**
- * Height of the axle: a cabin passing straight underneath, stepped back from the rim and
- * tilted, still clears the floor.
+/*
+ * There is no visible wheel: the cases themselves travel a level ring about an unseen vertical
+ * axis, stretched in depth, so the one in front is near and large and the others recede far
+ * behind it (smaller through perspective, and dimmer), peeking out to its left and right.
  */
-export const AXLE_Y = WHEEL_RADIUS + HEX_HALF_HEIGHT + 0.7;
-/**
- * The twin rims stand either side of the cabins (which hang between them on a crossbar); the
- * axle runs out past them to the stand's legs.
- */
-export const RIM_X = HEX_RADIUS + 0.3;
-export const AXLE_HALF = RIM_X + 0.25;
-/**
- * Cabins stay upright as the wheel turns, like a Ferris wheel's, and only tilt a little toward
- * the visitor when above or below the front, so their screens are always readable.
- */
-export const CABIN_TILT = 0.3;
-/** How far a cabin that is not in front steps back along its spoke. */
-export const RECEDE = 0.22;
 
-/** Where the camera looks and the exhibit light falls: the front cabin's centre. */
-export const FOCUS_POINT = [0, AXLE_Y - 0.1, WHEEL_RADIUS] as const;
+/** Width of the path either side of the axis, to the centre of each case. */
+export const WHEEL_RADIUS = 3.2;
+/** Depth of the path in front of and behind the axis: the front case is this far forward. */
+export const WHEEL_DEPTH = 5.0;
+/** Height of the ring (every case's centre): it floats a little over the floor, which reflects it. */
+export const AXLE_Y = HEX_HALF_HEIGHT + 1.0;
+/**
+ * Cases stay upright as they travel, turning only slightly toward the visitor when to the left
+ * or right of the front.
+ */
+export const CABIN_TILT = 0.12;
+/** How far a case that is not in front steps further back into the hall. */
+export const RECEDE = 0.6;
+
+/** Where the camera looks and the exhibit light falls: the front case's centre. */
+export const FOCUS_POINT = [0, AXLE_Y - 0.1, WHEEL_DEPTH] as const;
 
 export const HALL_COLOUR = '#070b14';

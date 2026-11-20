@@ -1,26 +1,28 @@
 import { MathUtils } from 'three';
 import { turnFor } from '../orbit/orbitPhysics';
-import { AXLE_Y, CABIN_TILT, HEX_HALF_HEIGHT, HEX_RADIUS, RECEDE, WHEEL_RADIUS } from './layout';
+import { AXLE_Y, CABIN_TILT, HEX_HALF_HEIGHT, HEX_RADIUS, RECEDE, WHEEL_DEPTH, WHEEL_RADIUS } from './layout';
 
 /** An angle folded into −π … π. */
 export const fold = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
 export interface CabinPlacement {
-  /** Where the cabin's centre is around the axle: 0 in front, positive above, negative below. */
+  /** Where the case is around the ring: 0 in front, positive to the left, negative to the right. */
   angle: number;
+  x: number;
   y: number;
   z: number;
-  /** Its small tilt toward the visitor (about the axle's direction). */
-  pitch: number;
+  /** Its small turn toward the visitor (about the vertical axis). */
+  yaw: number;
 }
 
 /**
- * Where cabin `index` is when the wheel is turned by `wheelAngle` (0 puts cabin 0 in front of
- * the camera). The cabins are spread evenly round the wheel, the next one waiting below the
- * front and the previous one above, so "next" (scroll down, swipe up, ↓) brings the next
- * project up into view. `emphasis` 1 keeps a cabin on the rim, 0 steps it back along its
- * spoke by RECEDE. `withdraw` (while another project opens) moves it back into the hall at
- * the same height, so a cabin below never sinks through the floor.
+ * Where case `index` is when the ring is turned by `wheelAngle` (0 puts case 0 in front of the
+ * camera). The cases are spread evenly round the ring, the next one waiting to the right of the
+ * front and the previous one to the left, so "next" (scroll down, swipe left, → or ↓) brings
+ * the next project in from the right. The path is a level circle about a vertical axis,
+ * stretched in depth (WHEEL_DEPTH against WHEEL_RADIUS). `emphasis` 1 keeps a case on the
+ * path, 0 steps it RECEDE further back. `withdraw` (while another project opens) moves it
+ * further back into the hall.
  */
 export function placeOnWheel(
   index: number,
@@ -30,19 +32,13 @@ export function placeOnWheel(
   withdraw = 0,
 ): CabinPlacement {
   const angle = fold(-index * turnFor(count) - wheelAngle);
-  const radius = WHEEL_RADIUS + RECEDE * (1 - emphasis);
   return {
     angle,
-    y: AXLE_Y + Math.sin(angle) * radius,
-    z: Math.cos(angle) * radius - withdraw,
-    pitch: angle * CABIN_TILT,
+    x: -Math.sin(angle) * WHEEL_RADIUS,
+    y: AXLE_Y,
+    z: Math.cos(angle) * WHEEL_DEPTH - RECEDE * (1 - emphasis) - withdraw,
+    yaw: -angle * CABIN_TILT,
   };
-}
-
-/** Where the rim carries cabin `index` (the point its crossbar and spokes meet). */
-export function rimPoint(index: number, wheelAngle: number, count: number): { y: number; z: number } {
-  const angle = fold(-index * turnFor(count) - wheelAngle);
-  return { y: AXLE_Y + Math.sin(angle) * WHEEL_RADIUS, z: Math.cos(angle) * WHEEL_RADIUS };
 }
 
 /**

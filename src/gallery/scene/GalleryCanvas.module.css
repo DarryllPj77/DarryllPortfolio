@@ -9,8 +9,8 @@
   touch-action: none;
 }
 
-/* The ring can be grabbed only while browsing. */
-.stage[data-browsing] {
+/* The wheel can be grabbed only while browsing. */
+.stage[data-browsing='true'] {
   cursor: grab;
 }
 

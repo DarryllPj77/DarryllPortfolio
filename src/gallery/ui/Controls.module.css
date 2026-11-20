@@ -1,7 +1,6 @@
-/* ↑ ▬ ▬ ▬ ↓ stacked like the wheel: quiet, mono, every target at least 44px. */
+/* ← ▬ ▬ ▬ → in a row, like the carousel: quiet, mono, every target at least 44px. */
 .controls {
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: var(--space-2);
 }
@@ -35,13 +34,12 @@
 
 .picker {
   display: flex;
-  flex-direction: column;
 }
 
 .pick {
   position: relative;
-  width: 44px;
-  height: 32px;
+  width: 40px;
+  height: 44px;
   padding: 0;
   border: 0;
   background: none;
@@ -65,17 +63,4 @@
 
 .pick[aria-pressed='true']::before {
   background: var(--color-accent);
-}
-
-/* Phones: a row under the placard. */
-@media (max-width: 767px) {
-  .controls,
-  .picker {
-    flex-direction: row;
-  }
-
-  .pick {
-    width: 40px;
-    height: 44px;
-  }
 }

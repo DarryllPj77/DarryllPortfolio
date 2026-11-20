@@ -10,8 +10,8 @@ interface ControlsProps {
 }
 
 /**
- * The exhibition's controls, for every visitor: previous (↑, the cabin above) and next (↓, the
- * cabin below), and one button per project (the current one pressed). Plain HTML buttons, so
+ * The exhibition's controls, for every visitor: previous (←, the case to the left) and next
+ * (→, the case to the right), and one button per project (the current one pressed). Plain HTML buttons, so
  * keyboards and screen readers work as everywhere else; the arrow keys work too, from anywhere
  * on the page.
  */
@@ -22,7 +22,7 @@ export function Controls({ projects, active, onPrevious, onNext, onChoose }: Con
   return (
     <nav className={styles.controls} aria-label="Exhibition">
       <button type="button" className={styles.step} onClick={onPrevious}>
-        <span aria-hidden="true">↑</span>
+        <span aria-hidden="true">←</span>
         <span className="visually-hidden">Previous project: {prev.project.name}</span>
       </button>
       <div className={styles.picker} role="group" aria-label="Choose a project">
@@ -41,7 +41,7 @@ export function Controls({ projects, active, onPrevious, onNext, onChoose }: Con
         ))}
       </div>
       <button type="button" className={styles.step} onClick={onNext}>
-        <span aria-hidden="true">↓</span>
+        <span aria-hidden="true">→</span>
         <span className="visually-hidden">Next project: {next.project.name}</span>
       </button>
     </nav>

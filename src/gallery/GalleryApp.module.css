@@ -1,8 +1,8 @@
-/* The placard, bottom-centre under the front cabin. */
+/* The placard, bottom-centre under the front case, with the controls' row below it. */
 .dock {
   position: fixed;
   left: 50%;
-  bottom: clamp(var(--space-4), 4vh, var(--space-7));
+  bottom: calc(var(--space-4) + 44px + var(--space-3));
   translate: -50% 0;
   z-index: 5;
   display: grid;
@@ -43,25 +43,11 @@
   color: var(--hall-ink);
 }
 
-/* The wheel's controls: a vertical rail at the right, beside the wheel, on a wide screen. */
+/* The carousel's controls: a row under the placard, where a thumb reaches on a phone. */
 .rail {
   position: fixed;
-  right: clamp(var(--space-4), 4vw, var(--space-7));
-  top: 50%;
-  translate: 0 -50%;
+  right: 50%;
+  bottom: var(--space-4);
+  translate: 50% 0;
   z-index: 5;
-}
-
-/* Phones: a row under the placard, where a thumb reaches without covering the front cabin. */
-@media (max-width: 767px) {
-  .rail {
-    right: 50%;
-    top: auto;
-    bottom: var(--space-4);
-    translate: 50% 0;
-  }
-
-  .dock {
-    bottom: calc(var(--space-4) + 44px + var(--space-3));
-  }
 }

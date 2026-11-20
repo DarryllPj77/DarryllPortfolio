@@ -9,11 +9,11 @@ import { getExhibit, type GalleryProject } from './data';
  */
 
 /**
- * How a collection is shown. "vertical-wheel": its projects as display cases on a 3D wheel
- * turning about a horizontal axle. New layouts are added to this list and to the presentation
- * registry (presentations.ts).
+ * How a collection is shown. "hex-carousel": its projects as hexagonal display cases on a 3D
+ * ring turning side to side, the front one large, the others receding behind it. New layouts
+ * are added to this list and to the presentation registry (presentations.ts).
  */
-export type PresentationType = 'vertical-wheel';
+export type PresentationType = 'hex-carousel';
 
 export interface CollectionTheme {
   /** The lit edge of the case in front, and the collection's accents in the lobby. */
@@ -36,10 +36,10 @@ export interface GalleryCollection {
 export const collections: GalleryCollection[] = [
   {
     id: '3-best-projects',
-    name: '3 Best Projects',
+    name: 'My 3 Best Projects',
     theme: { accent: '#818cf8', light: '#fff4e6' },
     projectIds: ['academic-sentinel', 'prematch-tracker', 'spendsync'],
-    presentation: 'vertical-wheel',
+    presentation: 'hex-carousel',
   },
 ];
 

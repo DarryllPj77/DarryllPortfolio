@@ -1,13 +1,23 @@
 import { MotionConfig } from 'motion/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { collections, getCollection, type GalleryCollection } from './collections';
 import { CollectionView } from './CollectionView';
 import { OrbitState } from './orbit/OrbitState';
+import { SceneErrorBoundary } from './scene/SceneErrorBoundary';
 import { formatHash, LOBBY, parseHash, type GalleryAddress } from './show/hash';
 import { GalleryBar } from './ui/GalleryBar';
 import { Lobby } from './ui/Lobby';
 import { StaticGallery } from './ui/StaticGallery';
 import { supportsWebGL } from './webgl';
+
+// The Gallery's one 3D canvas, downloaded only when it can run.
+const GalleryCanvas = lazy(() => import('./scene/GalleryCanvas'));
+
+/**
+ * Entering a collection waits for the lobby's camera to walk up to it; if the 3D room is not
+ * there to do that (still loading, say), the collection opens after this long anyway.
+ */
+const ENTER_FALLBACK_MS = 2000;
 
 /** The full entrance plays once per tab; later visits in the same tab get the short one. */
 const ENTERED_KEY = 'after-hours:entered';
@@ -57,6 +67,14 @@ export function GalleryApp() {
   const pushedCollection = useRef(false);
   /** Which entrance the next collection visit plays. */
   const [entered, setEntered] = useState(seenEntrance);
+  /** The Gallery's 3D stage, shared by the lobby and every collection. */
+  const stageRef = useRef<HTMLDivElement>(null);
+  /** The collection the lobby's camera is walking up to, or null. */
+  const [entering, setEntering] = useState<string | null>(null);
+  /** The collection just left (the lobby steps back from its view), or null. */
+  const [returnFrom, setReturnFrom] = useState<string | null>(null);
+  /** The current collection was reached from the lobby (its room opens from the dark). */
+  const [fromLobby, setFromLobby] = useState(false);
 
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -89,14 +107,39 @@ export function GalleryApp() {
     setAddress({ view: 'collection', collection: collection.id, index: null, open: false });
   }, []);
 
+  /** From the lobby: the camera walks up to the collection first, then it opens. */
+  const beginEnter = useCallback((collection: GalleryCollection) => {
+    setReturnFrom(null);
+    setEntering(collection.id);
+  }, []);
+
+  const finishEnter = useCallback(
+    (id: string) => {
+      const c = getCollection(id);
+      setEntering(null);
+      if (!c) return;
+      setFromLobby(true);
+      enter(c);
+    },
+    [enter],
+  );
+
+  // If the lobby's camera never gets there (its 3D room still loading), open the collection anyway.
+  useEffect(() => {
+    if (!entering) return;
+    const t = window.setTimeout(() => finishEnter(entering), ENTER_FALLBACK_MS);
+    return () => window.clearTimeout(t);
+  }, [entering, finishEnter]);
+
   const leave = useCallback(() => {
+    if (address.view === 'collection') setReturnFrom(address.collection);
     if (pushedCollection.current) {
       window.history.back(); // the popstate above shows the lobby
     } else {
       window.history.replaceState(null, '', formatHash());
       setAddress(LOBBY);
     }
-  }, []);
+  }, [address]);
 
   const collection = address.view === 'collection' ? getCollection(address.collection) : undefined;
   const orbit = collection ? orbits.get(collection.id) : undefined;
@@ -124,26 +167,38 @@ export function GalleryApp() {
     );
   }
 
-  if (!collection || !orbit || address.view !== 'collection') {
-    return (
-      <MotionConfig reducedMotion="user">
-        <Lobby onEnter={enter} />
-      </MotionConfig>
-    );
-  }
+  const inCollection = collection && orbit && address.view === 'collection';
 
   return (
     <MotionConfig reducedMotion="user">
-      <CollectionView
-        key={collection.id}
-        collection={collection}
-        orbit={orbit}
-        entrance={reduced ? 'reduced' : entered ? 'short' : 'full'}
-        startOpen={address.open}
-        reduced={reduced}
-        onLeave={leave}
-        onFail={() => setWebgl(false)}
-      />
+      {/* One canvas for the whole visit; the lobby and each collection draw their scene in it.
+          Any failure in it (a screenshot that won't load, the 3D code not arriving) shows the
+          HTML Gallery instead of a blank page. */}
+      <SceneErrorBoundary onError={() => setWebgl(false)}>
+        <Suspense fallback={null}>
+          <GalleryCanvas stageRef={stageRef} onFail={() => setWebgl(false)} />
+        </Suspense>
+      </SceneErrorBoundary>
+      {inCollection ? (
+        <CollectionView
+          key={collection.id}
+          collection={collection}
+          orbit={orbit}
+          entrance={reduced ? 'reduced' : fromLobby || entered ? 'short' : 'full'}
+          stageRef={stageRef}
+          startOpen={address.open}
+          reduced={reduced}
+          onLeave={leave}
+        />
+      ) : (
+        <Lobby
+          onEnter={beginEnter}
+          entering={entering}
+          onEntered={finishEnter}
+          returnFrom={returnFrom}
+          reduced={reduced}
+        />
+      )}
     </MotionConfig>
   );
 }

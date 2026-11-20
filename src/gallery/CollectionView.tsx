@@ -1,11 +1,13 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type RefObject } from 'react';
 import { duration, ease } from '../motion/tokens';
 import { collections, exhibitsIn, type GalleryCollection } from './collections';
 import { exhibitNumber } from './data';
 import type { OrbitState } from './orbit/OrbitState';
+import { useOrbitDrag } from './orbit/useOrbitDrag';
+import { useScrollSteps } from './orbit/useScrollSteps';
 import { presentations } from './presentations';
-import { SceneErrorBoundary } from './scene/SceneErrorBoundary';
+import { SceneTunnel } from './scene/tunnel';
 import { formatHash, parseHash } from './show/hash';
 import { ShowState } from './show/ShowState';
 import { Controls } from './ui/Controls';
@@ -24,13 +26,13 @@ interface CollectionViewProps {
   orbit: OrbitState;
   /** Which entrance to play: the full arrival, the short one, or a fade (reduced motion). */
   entrance: 'full' | 'short' | 'reduced';
+  /** The Gallery's 3D stage: drag and scroll turn the wheel there. */
+  stageRef: RefObject<HTMLDivElement | null>;
   /** Arrive with the project in front already open (from its own link). */
   startOpen: boolean;
   reduced: boolean;
   /** Back to the lobby. */
   onLeave: () => void;
-  /** The 3D scene could not run: the Gallery shows its HTML version instead. */
-  onFail: () => void;
 }
 
 /**
@@ -38,7 +40,7 @@ interface CollectionViewProps {
  * controls, each opening into its own presentation. Which 3D layout draws it comes from the
  * collection's presentation type; everything here is the same for every collection.
  */
-export function CollectionView({ collection, orbit, entrance, startOpen, reduced, onLeave, onFail }: CollectionViewProps) {
+export function CollectionView({ collection, orbit, entrance, stageRef, startOpen, reduced, onLeave }: CollectionViewProps) {
   const projects = exhibitsIn(collection);
   const total = projects.length;
   const slugs = collection.projectIds;
@@ -146,7 +148,7 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
         return;
       }
       if (current !== 'browsing' && current !== 'entering') return;
-      // ↓ (or →, Page Down) brings the next project in, ↑ (or ←, Page Up) the previous one.
+      // → (or ↓, Page Down) brings the next project in, ← (or ↑, Page Up) the previous one.
       const actions: Record<string, () => void> = {
         ArrowDown: () => orbit.next(),
         ArrowRight: () => orbit.next(),
@@ -193,6 +195,25 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
     else open();
   };
 
+  // Turning by hand and by scroll, on the shared stage: only while browsing (scroll also as the
+  // entrance ends, which skips it).
+  const browsing = phase === 'browsing';
+  useOrbitDrag(stageRef, orbit, browsing, dragAxis);
+  useScrollSteps(stageRef, orbit, browsing || phase === 'entering');
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    stage.dataset.browsing = browsing ? 'true' : '';
+    return () => {
+      stage.dataset.browsing = '';
+      stage.dataset.hover = '';
+    };
+  }, [stageRef, browsing]);
+  const setHoverCursor = (index: number | null) => {
+    const stage = stageRef.current;
+    if (stage && !orbit.isDragging) stage.dataset.hover = index === null || !browsing ? '' : 'case';
+  };
+
   const isOpen = phase === 'open';
   const opened = projects[show.opened];
 
@@ -208,22 +229,10 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
       <h1 className="visually-hidden">{collection.name}: a collection in the After Hours project Gallery</h1>
       {/* Behind an open project, the exhibition can't be reached or read. */}
       <div inert={isOpen}>
-        {/* Any failure in the 3D scene (a screenshot that won't load, the 3D code not arriving)
-            shows the HTML exhibition instead of a blank page. */}
-        <SceneErrorBoundary onError={onFail}>
-          <Suspense fallback={null}>
-            <Scene
-              projects={projects}
-              orbit={orbit}
-              show={show}
-              canDrag={phase === 'browsing'}
-              canScroll={phase === 'browsing' || phase === 'entering'}
-              dragAxis={dragAxis}
-              onSelect={select}
-              onFail={onFail}
-            />
-          </Suspense>
-        </SceneErrorBoundary>
+        {/* The collection's 3D exhibit, drawn in the Gallery's one canvas. */}
+        <SceneTunnel.In>
+          <Scene projects={projects} orbit={orbit} show={show} onSelect={select} onHover={setHoverCursor} />
+        </SceneTunnel.In>
         <AnimatePresence>
           {ui ? (
             <motion.div
@@ -244,7 +253,7 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
                   openRef={openButton}
                 />
               </div>
-              {/* Beside the wheel on a wide screen; under the placard on a phone. */}
+              {/* A row under the placard, matching the carousel's side-to-side turn. */}
               <div className={styles.rail}>
                 <Controls
                   projects={projects}

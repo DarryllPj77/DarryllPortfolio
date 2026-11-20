@@ -15,15 +15,10 @@ import {
   type SpotLight,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
-import type { OrbitState } from '../orbit/OrbitState';
-import type { ShowState } from '../show/ShowState';
 import { createFloorTexture } from './hallTextures';
-import type { Quality } from './quality';
-import { FOCUS_POINT, HALL_COLOUR } from './layout';
+import { HALL_COLOUR } from './layout';
+import { useQuality } from './qualityContext';
 
-/** The exhibit light hangs above and in front of the front position and stays there. */
-const LAMP_TARGET = new Vector3(FOCUS_POINT[0], FOCUS_POINT[1] - 0.3, FOCUS_POINT[2]);
-const LAMP = LAMP_TARGET.clone().add(new Vector3(0, 3.4, 2.2));
 const WARM = '#fff4e6';
 const LAMP_INTENSITY = 70;
 const FILL_INTENSITY = 0.18;
@@ -32,18 +27,30 @@ const ENV_INTENSITY = 0.32;
 const BEAM_STRENGTH = 0.07;
 
 /**
- * How bright the exhibit light is, 0.55…1: full while a case stands in front, easing down
- * while the ring is between cases and coming back up as the next one arrives.
+ * How bright the hall is right now, each 0…1, read on every frame: `hall` for the ambient
+ * fill, rim light and reflections, `lamp` for the exhibit spotlight and its beam. Each view
+ * (the lobby, a collection) supplies its own.
  */
-const lampLevel = (orbit: OrbitState) => 0.55 + 0.45 * Math.max(...orbit.emphasis);
+export interface HallLight {
+  hall: () => number;
+  lamp: () => number;
+}
+
+/** Where the exhibit light falls, and where it hangs: above and in front of it, fixed. */
+function lampAt(focus: readonly [number, number, number]) {
+  const target = new Vector3(focus[0], focus[1] - 0.3, focus[2]);
+  return { target, lamp: target.clone().add(new Vector3(0, 3.4, 2.2)) };
+}
 
 /**
  * The room: dark fog, a polished floor with a pressed hexagon pattern (semi-transparent, so
  * the cases' mirrored copies show through as a soft reflection), a small generated studio
  * environment for the metal's reflections, and three lights: a low ambient fill, the warm
- * exhibit spotlight fixed over the front position, and a cool rim light from behind.
+ * exhibit spotlight fixed over `focus` (the exhibit in front), and a cool rim light from behind.
  */
-export function Hall({ orbit, show, quality }: { orbit: OrbitState; show: ShowState; quality: Quality }) {
+export function Hall({ light, focus }: { light: HallLight; focus: readonly [number, number, number] }) {
+  const quality = useQuality();
+  const { target: LAMP_TARGET, lamp: LAMP } = useMemo(() => lampAt(focus), [focus]);
   // Three.js objects are changed in place; they are read from the store when needed.
   const get = useThree((s) => s.get);
 
@@ -83,17 +90,16 @@ export function Hall({ orbit, show, quality }: { orbit: OrbitState; show: ShowSt
     const o = new Object3D();
     o.position.copy(LAMP_TARGET);
     return o;
-  }, []);
+  }, [LAMP_TARGET]);
 
   const lamp = useRef<SpotLight>(null);
   const fill = useRef<AmbientLight>(null);
   const rim = useRef<DirectionalLight>(null);
   useFrame(() => {
-    // The ring dips the exhibit light between cases; the moment (entrance, opening) sets the rest.
-    if (lamp.current) lamp.current.intensity = LAMP_INTENSITY * lampLevel(orbit) * show.lamp;
-    if (fill.current) fill.current.intensity = FILL_INTENSITY * show.hall;
-    if (rim.current) rim.current.intensity = RIM_INTENSITY * show.hall;
-    get().scene.environmentIntensity = ENV_INTENSITY * show.hall;
+    if (lamp.current) lamp.current.intensity = LAMP_INTENSITY * light.lamp();
+    if (fill.current) fill.current.intensity = FILL_INTENSITY * light.hall();
+    if (rim.current) rim.current.intensity = RIM_INTENSITY * light.hall();
+    get().scene.environmentIntensity = ENV_INTENSITY * light.hall();
   });
 
   return (
@@ -127,7 +133,7 @@ export function Hall({ orbit, show, quality }: { orbit: OrbitState; show: ShowSt
         />
       </mesh>
 
-      {quality === 'high' ? <LightBeam orbit={orbit} show={show} /> : null}
+      {quality === 'high' ? <LightBeam light={light} lamp={LAMP} target={LAMP_TARGET} /> : null}
     </>
   );
 }
@@ -136,7 +142,7 @@ export function Hall({ orbit, show, quality }: { orbit: OrbitState; show: ShowSt
  * The spotlight's visible beam: an open cone, brightest at the lamp and fading towards the
  * floor and its own edges. Additive and very faint; the only "volumetric" touch in the hall.
  */
-function LightBeam({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
+function LightBeam({ light, lamp: LAMP, target: LAMP_TARGET }: { light: HallLight; lamp: Vector3; target: Vector3 }) {
   const { geometry, material, position, quaternion } = useMemo(() => {
     const direction = LAMP_TARGET.clone().sub(LAMP);
     const length = direction.length() * 1.15;
@@ -171,7 +177,7 @@ function LightBeam({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
         }`,
     });
     return { geometry, material, position, quaternion };
-  }, []);
+  }, [LAMP, LAMP_TARGET]);
 
   useEffect(
     () => () => {
@@ -183,7 +189,7 @@ function LightBeam({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
 
   const beam = useRef<{ material: ShaderMaterial }>({ material });
   useFrame(() => {
-    beam.current.material.uniforms.uStrength.value = BEAM_STRENGTH * lampLevel(orbit) * show.lamp;
+    beam.current.material.uniforms.uStrength.value = BEAM_STRENGTH * light.lamp();
   });
 
   return <mesh geometry={geometry} material={material} position={position} quaternion={quaternion} renderOrder={3} />;

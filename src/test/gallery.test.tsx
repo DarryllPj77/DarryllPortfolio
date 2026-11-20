@@ -100,7 +100,7 @@ describe('gallery collections', () => {
   it('show one collection for now, the three best projects in order', () => {
     expect(collections.map((c) => c.id)).toEqual(['3-best-projects']);
     expect(exhibitsIn(collections[0]).map((e) => e.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync']);
-    expect(collections[0].presentation).toBe('vertical-wheel');
+    expect(collections[0].presentation).toBe('hex-carousel');
   });
 
   it('only list projects that have an exhibit, each once', () => {
@@ -114,7 +114,7 @@ describe('gallery collections', () => {
 describe('gallery page without WebGL', () => {
   it('shows each collection, then each project with its number, name and links, and a way back to the portfolio', () => {
     render(<GalleryApp />);
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['3 Best Projects']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['My 3 Best Projects']);
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Academic Sentinel',
       'PreMatch Tracker',

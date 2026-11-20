@@ -1,17 +1,9 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
-import { Fog, MathUtils, type PerspectiveCamera } from 'three';
+import { Fog, type PerspectiveCamera } from 'three';
 import type { ShowState } from '../show/ShowState';
-import { AXLE_Y, FOCUS_POINT, WHEEL_RADIUS } from './layout';
-import { framingDistance, framingLift, openDistance } from './placement';
-
-/**
- * On a wide screen the camera stands a little to the left, turned about 15°, so the wheel reads
- * as a circle receding in depth rather than a flat column. On a tall phone screen (and while a
- * project opens) it faces the wheel squarely.
- */
-const WIDE_YAW = -0.26;
-const yawFor = (aspect: number) => (aspect > 1.15 ? WIDE_YAW : 0);
+import { wheelCameraPose } from './cameraPose';
+import { WHEEL_DEPTH } from './layout';
 
 /** How far the camera drifts with the mouse, in scene units: about two degrees of view. */
 const PARALLAX = { x: 0.35, y: 0.18 };
@@ -47,17 +39,6 @@ export function CameraRig({ show }: { show: ShowState }) {
   useFrame((state, dt) => {
     const camera = state.camera as PerspectiveCamera;
     const aspect = state.size.width / state.size.height;
-    const [fx, fy, fz] = FOCUS_POINT;
-
-    // Resting framing.
-    const restDistance = framingDistance(camera.fov, aspect);
-    const restLookY = fy - framingLift(camera.fov, aspect);
-    // Moved in on an opened case: level with its centre, square on.
-    const a = show.approach;
-    const distance = MathUtils.lerp(restDistance, openDistance(camera.fov, aspect), a);
-    const lookY = MathUtils.lerp(restLookY, AXLE_Y, a);
-    const rise = MathUtils.lerp(restDistance * 0.07, 0, a);
-    const yaw = MathUtils.lerp(yawFor(aspect), 0, a);
 
     // The mouse drift, eased; none while a case is open or opening.
     const browsing = show.phase === 'browsing';
@@ -67,17 +48,17 @@ export function CameraRig({ show }: { show: ShowState }) {
     drift.current.y += (target.y - drift.current.y) * k;
     if (Math.abs(target.x - drift.current.x) + Math.abs(target.y - drift.current.y) > 1e-3) state.invalidate();
 
-    camera.position.set(
-      fx + Math.sin(yaw) * distance + drift.current.x * PARALLAX.x,
-      lookY + rise - drift.current.y * PARALLAX.y,
-      fz + Math.cos(yaw) * distance,
-    );
-    camera.lookAt(fx, lookY, fz);
+    const pose = wheelCameraPose(camera.fov, aspect, show.approach, {
+      x: drift.current.x * PARALLAX.x,
+      y: drift.current.y * PARALLAX.y,
+    });
+    camera.position.set(...pose.position);
+    camera.lookAt(...pose.look);
 
     const { scene } = get();
     if (scene.fog instanceof Fog) {
-      scene.fog.near = distance + 1;
-      scene.fog.far = distance + WHEEL_RADIUS * 2 + 9;
+      scene.fog.near = pose.distance + 1;
+      scene.fog.far = pose.distance + WHEEL_DEPTH * 2 + 9;
     }
   });
 

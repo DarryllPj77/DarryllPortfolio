@@ -5,14 +5,12 @@ import { OrbitState } from '../gallery/orbit/OrbitState';
 import {
   AXLE_Y,
   CABIN_TILT,
-  HEX_BEVEL,
-  HEX_DEPTH,
   HEX_HALF_HEIGHT,
   HEX_RADIUS,
   RECEDE,
-  WHEEL_RADIUS,
+  WHEEL_DEPTH,
 } from '../gallery/scene/layout';
-import { framingDistance, framingLift, placeOnWheel, rimPoint } from '../gallery/scene/placement';
+import { framingDistance, framingLift, placeOnWheel } from '../gallery/scene/placement';
 
 const close = (a: number, b: number) => expect(a).toBeCloseTo(b, 6);
 
@@ -51,57 +49,55 @@ describe('hexagonal display case', () => {
   });
 });
 
-describe('the vertical wheel', () => {
+describe('the hexagon carousel', () => {
   const N = 3;
   const THIRD = (2 * Math.PI) / 3;
 
-  it('puts project 0 in front, the next one below and the previous one above, a third of a turn apart', () => {
+  it('puts project 0 in front, the next one to the right and the previous one to the left, a third of a turn apart', () => {
     const front = placeOnWheel(0, 0, 1, N);
-    close(front.y, AXLE_Y);
-    close(front.z, WHEEL_RADIUS);
-    close(front.pitch, 0);
+    close(front.x, 0);
+    close(front.z, WHEEL_DEPTH);
+    close(front.yaw, 0);
     const next = placeOnWheel(1, 0, 1, N);
     close(next.angle, -THIRD);
-    expect(next.y).toBeLessThan(AXLE_Y); // waiting below
-    expect(next.z).toBeLessThan(0); // and behind the axle
+    expect(next.x).toBeGreaterThan(0); // waiting to the right
+    expect(next.z).toBeLessThan(0); // and behind the axis
     const previous = placeOnWheel(2, 0, 1, N);
-    close(previous.angle, THIRD); // the short way round: above, not two thirds below
-    expect(previous.y).toBeGreaterThan(AXLE_Y);
+    close(previous.angle, THIRD); // the short way round: to the left
+    expect(previous.x).toBeLessThan(0);
   });
 
-  it('turns as one: "next" brings the cabin from below up into the front', () => {
+  it('turns side to side only: every case stays at the same height', () => {
+    for (let a = -Math.PI; a <= Math.PI; a += 0.1) {
+      for (let i = 0; i < N; i++) close(placeOnWheel(i, a, Math.random(), N, Math.random()).y, AXLE_Y);
+    }
+  });
+
+  it('turns as one: "next" brings the case from the right into the front', () => {
     const orbit = new OrbitState({ count: N });
     orbit.next();
     for (let t = 0; t < 2; t += 1 / 60) orbit.step(1 / 60);
     const p = placeOnWheel(1, orbit.angle, 1, N);
-    close(p.y, AXLE_Y);
-    close(p.z, WHEEL_RADIUS);
-    // Halfway there it was still below the front, rising.
+    close(p.x, 0);
+    close(p.z, WHEEL_DEPTH);
+    // Halfway there it was still to the right of the front, coming forward.
     const halfway = placeOnWheel(1, -THIRD / 2, 1, N);
-    expect(halfway.y).toBeLessThan(AXLE_Y);
+    expect(halfway.x).toBeGreaterThan(0);
     expect(halfway.z).toBeGreaterThan(0);
   });
 
-  it('keeps every cabin upright, tilting only a little toward the visitor', () => {
+  it('keeps every case upright, turning only a little toward the visitor', () => {
     for (const angle of [0, 0.5, 1, 2, 3, -1, -2.5]) {
       for (let i = 0; i < N; i++) {
         const p = placeOnWheel(i, angle, 1, N);
-        close(p.pitch, p.angle * CABIN_TILT);
-        expect(Math.abs(p.pitch)).toBeLessThanOrEqual(Math.PI * CABIN_TILT + 1e-9);
+        close(p.yaw, -p.angle * CABIN_TILT);
+        expect(Math.abs(p.yaw)).toBeLessThanOrEqual(Math.PI * CABIN_TILT + 1e-9);
       }
     }
   });
 
-  it('lets every cabin clear the floor all the way round, stepped back and tilted', () => {
-    const halfThick = HEX_DEPTH / 2 + HEX_BEVEL;
-    for (let a = -Math.PI; a <= Math.PI; a += 0.05) {
-      for (const withdraw of [0, 3]) {
-        const p = placeOnWheel(0, a, 0, N, withdraw);
-        // Tilting about the axle's direction: the case's half-height and half-thickness both reach down.
-        const reach = HEX_HALF_HEIGHT * Math.cos(p.pitch) + halfThick * Math.abs(Math.sin(p.pitch));
-        expect(p.y - reach, `at ${a.toFixed(2)}`).toBeGreaterThan(0.25);
-      }
-    }
+  it('floats every case clear of the floor', () => {
+    expect(AXLE_Y - HEX_HALF_HEIGHT).toBeGreaterThan(0.25);
   });
 
   it('withdraws other cabins back into the hall at the same height while a project opens', () => {
@@ -111,12 +107,15 @@ describe('the vertical wheel', () => {
     close(away.z, still.z - 3);
   });
 
-  it('steps a cabin that is not in front back along its spoke, away from the rim', () => {
+  it('steps a cabin that is not in front further back into the hall, at the same height', () => {
     const p = placeOnWheel(0, 0, 0, N);
-    close(p.z, WHEEL_RADIUS + RECEDE);
-    const rim = rimPoint(0, 0, N);
-    close(rim.z, WHEEL_RADIUS);
-    close(rim.y, AXLE_Y);
+    close(p.z, WHEEL_DEPTH - RECEDE);
+    close(p.y, AXLE_Y);
+  });
+
+  it('sends the others far behind the front case, so perspective makes them smaller', () => {
+    const front = placeOnWheel(0, 0, 1, N);
+    for (const i of [1, 2]) expect(front.z - placeOnWheel(i, 0, 0, N).z).toBeGreaterThan(WHEEL_DEPTH);
   });
 
   it('holds exactly the projects it is given, spaced evenly: no copies to fill it out', () => {
