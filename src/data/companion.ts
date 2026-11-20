@@ -33,6 +33,10 @@ export const companionLines: Record<string, CompanionLine> = {
     title: sections.home.file,
     text: `Start here. I'm a ${profile.yearLevel.toLowerCase()} Computer Science student focused on C# and .NET, open to a ${profile.internship.label}.`,
   },
+  [sections.gallery.path]: {
+    title: sections.gallery.file,
+    text: `Real screens from my ${projects.length} projects, ${featuredProject.name} first. Open any of them for its case study.`,
+  },
   [sections.about.path]: {
     title: sections.about.file,
     text: `Let me tell you a bit about my background! I study at ${profile.school}, specializing in ${profile.specialization}.`,

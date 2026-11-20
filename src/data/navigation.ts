@@ -19,24 +19,25 @@ export interface SectionInfo {
 export const sections: Record<SectionId, SectionInfo> = {
   home: { id: 'home', label: 'Home', marker: 'Introduction', index: '01', path: '/', file: 'README.md' },
   projects: { id: 'projects', label: 'Projects', marker: 'Projects', index: '02', path: '/projects', file: 'projects/' },
-  about: { id: 'about', label: 'About', marker: 'About', index: '03', path: '/about', file: 'Darryll.md' },
-  skills: { id: 'skills', label: 'Skills', marker: 'Skills', index: '04', path: '/skills', file: 'tech-stack.json' },
+  gallery: { id: 'gallery', label: 'Gallery', marker: 'Gallery', index: '03', path: '/gallery', file: 'gallery/' },
+  about: { id: 'about', label: 'About', marker: 'About', index: '04', path: '/about', file: 'Darryll.md' },
+  skills: { id: 'skills', label: 'Skills', marker: 'Skills', index: '05', path: '/skills', file: 'tech-stack.json' },
   certifications: {
     id: 'certifications',
     label: 'Certifications',
     marker: 'Certifications',
-    index: '05',
+    index: '06',
     path: '/certifications',
     file: 'certifications/',
   },
-  contact: { id: 'contact', label: 'Contact', marker: 'Contact', index: '06', path: '/contact', file: 'contact.me' },
+  contact: { id: 'contact', label: 'Contact', marker: 'Contact', index: '07', path: '/contact', file: 'contact.me' },
 };
 
 /** Recruiter-friendly top navigation. */
-export const primaryNav: SectionId[] = ['home', 'projects', 'about', 'skills', 'contact'];
+export const primaryNav: SectionId[] = ['home', 'projects', 'gallery', 'about', 'skills', 'contact'];
 
 /** Mobile menu: everything, since there is no Explorer on phones. */
-export const mobileNav: SectionId[] = ['home', 'projects', 'about', 'skills', 'certifications', 'contact'];
+export const mobileNav: SectionId[] = ['home', 'projects', 'gallery', 'about', 'skills', 'certifications', 'contact'];
 
 /* ---------------- Explorer (workspace file tree) ---------------- */
 
@@ -72,6 +73,7 @@ const extensionStyle: Record<string, { icon: IconName; tone: FileTone }> = {
   json: { icon: 'braces', tone: 'success' },
   cert: { icon: 'award', tone: 'accent' },
   me: { icon: 'mail', tone: 'accent-2' },
+  png: { icon: 'image', tone: 'accent-2' },
 };
 
 function file(name: string, title: string, path: string, hash?: string): ExplorerFile {
@@ -89,6 +91,7 @@ export const explorerTree: ExplorerNode[] = [
     name: 'projects',
     children: projects.map((p) => file(p.fileName, p.name, `/projects/${p.slug}`)),
   },
+  { kind: 'folder', id: 'gallery', name: 'gallery', children: [file('showcase.png', 'Gallery', '/gallery')] },
   {
     kind: 'folder',
     id: 'skills',

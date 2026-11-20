@@ -2,6 +2,7 @@ import { Route, Routes, type Location } from 'react-router';
 import { AboutView } from './views/AboutView';
 import { CertificationsView } from './views/CertificationsView';
 import { ContactView } from './views/ContactView';
+import { GalleryView } from './views/GalleryView';
 import { HomeView } from './views/HomeView';
 import { NotFoundView } from './views/NotFoundView';
 import { ProjectDetailView } from './views/ProjectDetailView';
@@ -15,6 +16,7 @@ export function AppRoutes({ location }: { location: Location }) {
       <Route path="about" element={<AboutView />} />
       <Route path="projects" element={<ProjectsView />} />
       <Route path="projects/:slug" element={<ProjectDetailView />} />
+      <Route path="gallery" element={<GalleryView />} />
       <Route path="skills" element={<SkillsView />} />
       <Route path="certifications" element={<CertificationsView />} />
       <Route path="contact" element={<ContactView />} />

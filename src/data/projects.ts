@@ -118,6 +118,13 @@ export const projects: Project[] = [
         href: 'https://github.com/DarryllPj77/prematch-tracker',
       },
     ],
+    hero: {
+      src: '/image/projects/prematch-tracker/01-manager-daily-attendance.jpg',
+      width: 976,
+      height: 1028,
+      caption: 'Manager feed with the day’s submissions and the attendance calendar',
+      alt: 'PreMatch Tracker manager feed for a demo team: the roster, an attendance calendar marked with passed and failed days, and five player submissions for the day with their scores and a pass or fail result.',
+    },
   },
   {
     slug: 'spendsync',
@@ -159,6 +166,13 @@ export const projects: Project[] = [
         href: 'https://github.com/DarryllPj77/SpendSync',
       },
     ],
+    hero: {
+      src: '/image/projects/spendsync/spendsync-monthly-analytics-viewport.jpg',
+      width: 1075,
+      height: 780,
+      caption: 'Monthly summary of income and expenses',
+      alt: 'SpendSync Monthly Summary with demo data: total income, total expenses and all-time net, above a bar chart comparing income and expenses for each month from June to November 2026.',
+    },
   },
 ];
 

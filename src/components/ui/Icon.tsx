@@ -25,9 +25,19 @@ export type IconName =
   | 'check'
   | 'calendar'
   | 'clock'
-  | 'braces';
+  | 'braces'
+  | 'image'
+  | 'expand';
 
 const strokePaths: Partial<Record<IconName, ReactNode>> = {
+  image: (
+    <>
+      <rect x="3" y="4.5" width="18" height="15" rx="1.5" />
+      <circle cx="8.5" cy="9.5" r="1.5" />
+      <path d="m21 15.5-5-5-9 9" />
+    </>
+  ),
+  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
   home: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />
