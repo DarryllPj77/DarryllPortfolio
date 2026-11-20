@@ -146,9 +146,14 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
         return;
       }
       if (current !== 'browsing' && current !== 'entering') return;
+      // ↓ (or →, Page Down) brings the next project in, ↑ (or ←, Page Up) the previous one.
       const actions: Record<string, () => void> = {
-        ArrowLeft: () => orbit.previous(),
+        ArrowDown: () => orbit.next(),
         ArrowRight: () => orbit.next(),
+        PageDown: () => orbit.next(),
+        ArrowUp: () => orbit.previous(),
+        ArrowLeft: () => orbit.previous(),
+        PageUp: () => orbit.previous(),
         Home: () => orbit.goTo(0),
         End: () => orbit.goTo(total - 1),
       };
@@ -157,13 +162,16 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
       e.preventDefault();
       action();
     };
-    // A click or tap anywhere during the entrance skips to its end.
+    // A click, tap or scroll anywhere during the entrance skips to its end (a scroll on the
+    // wheel also turns it, as an arrow key does).
     const onPointer = () => show.skipEntrance();
     window.addEventListener('keydown', onKey);
     window.addEventListener('pointerdown', onPointer);
+    window.addEventListener('wheel', onPointer, { passive: true });
     return () => {
       window.removeEventListener('keydown', onKey);
       window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener('wheel', onPointer);
     };
   }, [orbit, show, total, requestClose, onLeave]);
 
@@ -209,6 +217,7 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
               orbit={orbit}
               show={show}
               canDrag={phase === 'browsing'}
+              canScroll={phase === 'browsing' || phase === 'entering'}
               dragAxis={dragAxis}
               onSelect={select}
               onFail={onFail}
@@ -234,6 +243,9 @@ export function CollectionView({ collection, orbit, entrance, startOpen, reduced
                   onOpen={open}
                   openRef={openButton}
                 />
+              </div>
+              {/* Beside the wheel on a wide screen; under the placard on a phone. */}
+              <div className={styles.rail}>
                 <Controls
                   projects={projects}
                   active={active}

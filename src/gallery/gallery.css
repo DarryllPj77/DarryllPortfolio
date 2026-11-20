@@ -27,6 +27,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* A downward swipe turns the wheel: it must never pull the page down to reload it. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   min-height: 100dvh;
   background: var(--hall-bg);

@@ -4,6 +4,7 @@ import { ACESFilmicToneMapping } from 'three';
 import type { GalleryProject } from '../data';
 import type { OrbitState } from '../orbit/OrbitState';
 import { useOrbitDrag, type DragAxis } from '../orbit/useOrbitDrag';
+import { useScrollSteps } from '../orbit/useScrollSteps';
 import type { ShowState } from '../show/ShowState';
 import { CameraRig } from './CameraRig';
 import { Hall } from './Hall';
@@ -17,6 +18,8 @@ export interface ExhibitionCanvasProps {
   show: ShowState;
   /** Whether the exhibit may be dragged now (only while browsing). */
   canDrag: boolean;
+  /** Whether scrolling may turn it now (while browsing, and as the entrance ends). */
+  canScroll: boolean;
   /** Which way the hand moves to turn it. */
   dragAxis: DragAxis;
   /** A case was clicked or tapped. */
@@ -75,12 +78,15 @@ export default function ExhibitionCanvas({
   orbit,
   show,
   canDrag,
+  canScroll,
   dragAxis,
   onSelect,
   onFail,
 }: ExhibitionCanvasProps) {
   const stage = useRef<HTMLDivElement>(null);
   useOrbitDrag(stage, orbit, canDrag, dragAxis);
+  // A vertical exhibit also turns with the scroll wheel (one project per gesture).
+  useScrollSteps(stage, orbit, canScroll && dragAxis === 'y');
   const [quality, setQuality] = useState<Quality>(initialQuality);
   const low = quality === 'low';
 

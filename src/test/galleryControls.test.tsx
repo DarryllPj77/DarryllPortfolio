@@ -86,6 +86,20 @@ describe('exhibition controls', () => {
     await waitFor(() => expect(placardName()).toBe('SpendSync'));
   });
 
+  it('turns the vertical wheel with ↓ and ↑, and Page Down and Page Up', async () => {
+    const user = userEvent.setup();
+    render(<GalleryApp />);
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    await user.keyboard('{ArrowDown}');
+    await waitFor(() => expect(placardName()).toBe('PreMatch Tracker'));
+    await user.keyboard('{PageDown}');
+    await waitFor(() => expect(placardName()).toBe('SpendSync'));
+    await user.keyboard('{ArrowUp}');
+    await waitFor(() => expect(placardName()).toBe('PreMatch Tracker'));
+    await user.keyboard('{PageUp}');
+    await waitFor(() => expect(placardName()).toBe('Academic Sentinel'));
+  });
+
   it('shows the front project’s own links only', async () => {
     const user = userEvent.setup();
     render(<GalleryApp />);
