@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { galleryProjects } from '../gallery/data';
 import { createFaceGeometry, hexCorners } from '../gallery/scene/hexGeometry';
 import { FACING_SHARE, HEX_RADIUS, ORBIT_RADIUS, RECEDE } from '../gallery/scene/layout';
-import { framingDistance, placeOnRing } from '../gallery/scene/placement';
+import { framingDistance, framingLift, placeOnRing } from '../gallery/scene/placement';
 
 const close = (a: number, b: number) => expect(a).toBeCloseTo(b, 6);
 
@@ -71,5 +71,10 @@ describe('camera framing', () => {
     expect(framingDistance(30, 375 / 812)).toBeGreaterThan(framingDistance(30, 1280 / 800));
     // On wide screens the height decides, so widening further changes nothing.
     close(framingDistance(30, 16 / 9), framingDistance(30, 21 / 9));
+  });
+
+  it('raises the case into the spare height of a tall screen, and leaves wide screens alone', () => {
+    expect(framingLift(30, 375 / 812)).toBeGreaterThan(0);
+    close(framingLift(30, 1280 / 800), 0);
   });
 });

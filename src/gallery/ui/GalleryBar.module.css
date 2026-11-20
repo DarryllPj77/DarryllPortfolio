@@ -19,6 +19,7 @@
   font-size: var(--fs-2xs);
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--hall-ink);
 }
 

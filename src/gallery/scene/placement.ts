@@ -41,3 +41,14 @@ export function framingDistance(fovDeg: number, aspect: number): number {
   const tanV = Math.tan(MathUtils.degToRad(fovDeg) / 2);
   return Math.max(FRAME_H / tanV, FRAME_W / (tanV * aspect));
 }
+
+/**
+ * On a tall screen the width decides the distance, which leaves spare height. The camera then
+ * aims this far below the case's centre, raising the case into the space above the placard.
+ * On wide screens there is no spare height, so it is 0.
+ */
+export function framingLift(fovDeg: number, aspect: number): number {
+  const tanV = Math.tan(MathUtils.degToRad(fovDeg) / 2);
+  const spare = framingDistance(fovDeg, aspect) * tanV - FRAME_H;
+  return Math.max(0, spare) * 0.45;
+}

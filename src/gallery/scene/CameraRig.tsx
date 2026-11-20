@@ -2,7 +2,7 @@ import { useThree } from '@react-three/fiber';
 import { useLayoutEffect } from 'react';
 import { Fog, type PerspectiveCamera } from 'three';
 import { FOCUS_POINT, ORBIT_RADIUS } from './layout';
-import { framingDistance } from './placement';
+import { framingDistance, framingLift } from './placement';
 
 /**
  * The resting camera: slightly above and in front of the active case, looking at its centre.
@@ -17,8 +17,10 @@ export function CameraRig() {
   useLayoutEffect(() => {
     const { scene, invalidate } = get();
     const camera = get().camera as PerspectiveCamera;
-    const distance = framingDistance(camera.fov, size.width / size.height);
-    const [x, y, z] = FOCUS_POINT;
+    const aspect = size.width / size.height;
+    const distance = framingDistance(camera.fov, aspect);
+    const [x, fy, z] = FOCUS_POINT;
+    const y = fy - framingLift(camera.fov, aspect);
     camera.position.set(x, y + distance * 0.07, z + distance);
     camera.lookAt(x, y, z);
     camera.updateProjectionMatrix();

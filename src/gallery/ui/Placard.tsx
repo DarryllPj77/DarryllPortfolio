@@ -1,4 +1,6 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { ExternalLink } from '../../components/ui/ExternalLink';
+import { duration, ease } from '../../motion/tokens';
 import { exhibitNumber, type GalleryProject } from '../data';
 import styles from './Placard.module.css';
 
@@ -7,14 +9,32 @@ interface PlacardProps {
   index: number;
 }
 
-/** The museum placard under the active case: its number and name, and nothing more than its links. */
+/**
+ * The museum placard under the front case: its number and name, and its links. When another
+ * case comes to the front, the old name slides up behind a mask and the new one rises in.
+ */
 export function Placard({ project, index }: PlacardProps) {
   return (
-    <section className={styles.placard} aria-labelledby="placard-name">
-      <p className={styles.number}>{exhibitNumber(index)}</p>
-      <h2 id="placard-name" className={styles.name}>
-        {project.project.name}
-      </h2>
+    // Named directly, not by the heading's id: while the name changes, the old and new headings
+    // briefly both exist.
+    <section className={styles.placard} aria-label={project.project.name}>
+      <div className={styles.mask}>
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={project.slug}
+            className={styles.identity}
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: '0%', opacity: 1 }}
+            exit={{ y: '-100%', opacity: 0 }}
+            transition={{ duration: duration.base, ease: ease.out }}
+          >
+            <p className={styles.number}>{exhibitNumber(index)}</p>
+            <h2 className={styles.name}>
+              {project.project.name}
+            </h2>
+          </motion.div>
+        </AnimatePresence>
+      </div>
       <p className="visually-hidden">{project.cover.alt}</p>
       <ul role="list" className={styles.links}>
         {project.links.map((link) => (

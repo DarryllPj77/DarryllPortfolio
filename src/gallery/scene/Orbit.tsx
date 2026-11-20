@@ -1,7 +1,8 @@
-import { useLoader, useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo } from 'react';
-import { MeshBasicMaterial, MeshPhysicalMaterial, TextureLoader } from 'three';
+import { useFrame, useLoader, useThree, type ThreeEvent } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { MeshBasicMaterial, MeshPhysicalMaterial, TextureLoader, type Group, type Mesh } from 'three';
 import type { GalleryProject } from '../data';
+import type { OrbitState } from '../orbit/OrbitState';
 import { HexExhibit, type SharedExhibitParts } from './HexExhibit';
 import { createBodyGeometry, createEdgeGeometry } from './hexGeometry';
 import { createShadowTexture } from './hallTextures';
@@ -9,16 +10,23 @@ import { EXHIBIT_Y } from './layout';
 import { placeOnRing } from './placement';
 import { prepareScreenshots } from './textures';
 
+/** A press that moved further than this (in pixels) was a drag, not a click. */
+const CLICK_SLOP = 6;
+
 interface OrbitProps {
   projects: GalleryProject[];
-  /** Ring turn in radians. */
-  ringAngle: number;
-  /** 0…1 for each case, see HexExhibit. */
-  emphasis: number[];
+  orbit: OrbitState;
+  /** A case was clicked: a side case comes to the front; the front case opens (phase 4). */
+  onSelect: (index: number) => void;
+  /** The pointer is over a case, or has left all of them. */
+  onHover: (index: number | null) => void;
 }
 
-/** The three display cases on their ring, each with its floor shadow and its reflection. */
-export function Orbit({ projects, ringAngle, emphasis }: OrbitProps) {
+/**
+ * The three display cases on their ring, each with its floor shadow and its reflection.
+ * Every frame they are placed from the ring's live state, so turning costs no React render.
+ */
+export function Orbit({ projects, orbit, onSelect, onHover }: OrbitProps) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const textures = useLoader(
@@ -71,29 +79,80 @@ export function Orbit({ projects, ringAngle, emphasis }: OrbitProps) {
     [parts, shadow],
   );
 
-  const cases = projects.map((project, i) => {
-    const place = placeOnRing(i, ringAngle, emphasis[i] ?? 0);
-    return { project, place, texture: textures[i], emphasis: emphasis[i] ?? 0 };
+  const cases = useRef<(Group | null)[]>([]);
+  const reflections = useRef<(Group | null)[]>([]);
+  const shadows = useRef<(Mesh | null)[]>([]);
+
+  useFrame(() => {
+    for (let i = 0; i < projects.length; i++) {
+      const p = placeOnRing(i, orbit.angle, orbit.emphasis[i]);
+      for (const g of [cases.current[i], reflections.current[i]]) {
+        g?.position.set(p.x, EXHIBIT_Y, p.z);
+        g?.rotation.set(0, p.yaw, 0);
+      }
+      // Laid flat, then turned with its case (a turn in the plane's own z is a turn about world y).
+      shadows.current[i]?.position.set(p.x, 0.01, p.z);
+      shadows.current[i]?.rotation.set(-Math.PI / 2, 0, p.yaw);
+    }
   });
 
-  const renderCases = (key: string) =>
-    cases.map(({ project, place, texture, emphasis: e }) => (
-      <group key={`${key}-${project.slug}`} position={[place.x, EXHIBIT_Y, place.z]} rotation-y={place.yaw}>
-        <HexExhibit parts={parts} texture={texture} image={project.cover} focus={project.focus} emphasis={e} />
-      </group>
-    ));
+  const click = (index: number) => (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.delta > CLICK_SLOP || orbit.isDragging) return;
+    onSelect(index);
+  };
 
   return (
     <>
-      {renderCases('case')}
+      {projects.map((project, i) => (
+        <group
+          key={`case-${project.slug}`}
+          ref={(g) => {
+            cases.current[i] = g;
+          }}
+          onClick={click(i)}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            onHover(i);
+          }}
+          onPointerOut={() => onHover(null)}
+        >
+          <HexExhibit
+            parts={parts}
+            texture={textures[i]}
+            image={project.cover}
+            focus={project.focus}
+            orbit={orbit}
+            index={i}
+          />
+        </group>
+      ))}
       {/* The floor's reflection: the same cases, mirrored below it, seen through its gloss. */}
-      <group scale-y={-1}>{renderCases('reflection')}</group>
-      {cases.map(({ project, place }) => (
+      <group scale-y={-1}>
+        {projects.map((project, i) => (
+          <group
+            key={`reflection-${project.slug}`}
+            ref={(g) => {
+              reflections.current[i] = g;
+            }}
+          >
+            <HexExhibit
+              parts={parts}
+              texture={textures[i]}
+              image={project.cover}
+              focus={project.focus}
+              orbit={orbit}
+              index={i}
+            />
+          </group>
+        ))}
+      </group>
+      {projects.map((project, i) => (
         <mesh
           key={`shadow-${project.slug}`}
-          position={[place.x, 0.01, place.z]}
-          // Laid flat, then turned with its case (a turn in the plane's own z is a turn about world y).
-          rotation={[-Math.PI / 2, 0, place.yaw]}
+          ref={(m) => {
+            shadows.current[i] = m;
+          }}
           material={shadow}
           renderOrder={2}
         >

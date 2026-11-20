@@ -3,6 +3,16 @@
   position: fixed;
   inset: 0;
   background: var(--hall-bg);
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  /* The ring takes sideways swipes; nothing on this page scrolls. */
+  touch-action: none;
+}
+
+/* Over a case: it can be chosen. (While dragging, the drag sets "grabbing" directly.) */
+.stage[data-hover='case'] {
+  cursor: pointer;
 }
 
 .stage canvas {

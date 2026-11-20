@@ -1,0 +1,66 @@
+/* ←  ▬ ▬ ▬  → : quiet, mono, every target at least 44px. */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.step {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--hall-line);
+  border-radius: 50%;
+  background: rgb(7 11 20 / 0.6);
+  color: var(--hall-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out);
+}
+
+.step:hover {
+  color: var(--hall-ink);
+  border-color: rgb(148 163 184 / 0.4);
+}
+
+.step:active {
+  scale: 0.94;
+}
+
+.picker {
+  display: flex;
+}
+
+.pick {
+  position: relative;
+  width: 40px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.pick::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  background: rgb(148 163 184 / 0.3);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.pick:hover::before {
+  background: var(--hall-muted);
+}
+
+.pick[aria-pressed='true']::before {
+  background: var(--color-accent);
+}

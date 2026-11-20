@@ -1,5 +1,7 @@
+import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo } from 'react';
 import type { BufferGeometry, Material, Texture } from 'three';
+import type { OrbitState } from '../orbit/OrbitState';
 import { applyEmphasis, createEdgeMaterial, createFaceMaterial } from './exhibitMaterials';
 import { createFaceGeometry, type FocalPoint } from './hexGeometry';
 import { HEX_FRONT_Z } from './layout';
@@ -17,24 +19,22 @@ interface HexExhibitProps {
   texture: Texture;
   image: { width: number; height: number };
   focus: FocalPoint;
-  /**
-   * 1 for the case in front of the visitor, 0 for the others: brightness of its screen and
-   * of the lit line around it. Phase 3 animates it between the two.
-   */
-  emphasis: number;
+  /** The ring: how "in front" this case is decides its brightness and its lit line. */
+  orbit: OrbitState;
+  index: number;
 }
 
 /**
  * One display case: a bevelled graphite hexagon, the project's real screenshot filling its
- * hexagonal screen behind a thin layer of glass, and an indigo line that lights only on the
- * active case.
+ * hexagonal screen behind a thin layer of glass, and an indigo line that lights as the case
+ * comes to the front.
  */
-export function HexExhibit({ parts, texture, image, focus, emphasis }: HexExhibitProps) {
+export function HexExhibit({ parts, texture, image, focus, orbit, index }: HexExhibitProps) {
   const faceGeometry = useMemo(() => createFaceGeometry(image, focus), [image, focus]);
   const faceMaterial = useMemo(() => createFaceMaterial(texture), [texture]);
   const edgeMaterial = useMemo(() => createEdgeMaterial(), []);
 
-  useLayoutEffect(() => applyEmphasis(faceMaterial, edgeMaterial, emphasis), [emphasis, faceMaterial, edgeMaterial]);
+  useFrame(() => applyEmphasis(faceMaterial, edgeMaterial, orbit.emphasis[index]));
 
   useLayoutEffect(
     () => () => {

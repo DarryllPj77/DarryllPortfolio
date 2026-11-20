@@ -1,5 +1,5 @@
-import { useThree } from '@react-three/fiber';
-import { useEffect, useLayoutEffect, useMemo } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import {
   AdditiveBlending,
   Color,
@@ -10,8 +10,10 @@ import {
   Quaternion,
   ShaderMaterial,
   Vector3,
+  type SpotLight,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import type { OrbitState } from '../orbit/OrbitState';
 import { createFloorTexture } from './hallTextures';
 import { EXHIBIT_Y, HALL_COLOUR, ORBIT_RADIUS } from './layout';
 
@@ -19,6 +21,14 @@ import { EXHIBIT_Y, HALL_COLOUR, ORBIT_RADIUS } from './layout';
 const LAMP = new Vector3(0, 6.4, ORBIT_RADIUS + 2.2);
 const LAMP_TARGET = new Vector3(0, EXHIBIT_Y - 0.4, ORBIT_RADIUS);
 const WARM = '#fff4e6';
+const LAMP_INTENSITY = 70;
+const BEAM_STRENGTH = 0.07;
+
+/**
+ * How bright the exhibit light is, 0.55…1: full while a case stands in front, easing down
+ * while the ring is between cases and coming back up as the next one arrives.
+ */
+const lampLevel = (orbit: OrbitState) => 0.55 + 0.45 * Math.max(...orbit.emphasis);
 
 /**
  * The room: dark fog, a polished floor with a pressed hexagon pattern (semi-transparent, so
@@ -26,7 +36,7 @@ const WARM = '#fff4e6';
  * environment for the metal's reflections, and three lights: a low ambient fill, the warm
  * exhibit spotlight fixed over the front position, and a cool rim light from behind.
  */
-export function Hall() {
+export function Hall({ orbit }: { orbit: OrbitState }) {
   // Three.js objects are changed in place; they are read from the store when needed.
   const get = useThree((s) => s.get);
 
@@ -68,15 +78,21 @@ export function Hall() {
     return o;
   }, []);
 
+  const lamp = useRef<SpotLight>(null);
+  useFrame(() => {
+    if (lamp.current) lamp.current.intensity = LAMP_INTENSITY * lampLevel(orbit);
+  });
+
   return (
     <>
       <ambientLight color="#b4c3e0" intensity={0.18} />
       <primitive object={lampTarget} />
       <spotLight
+        ref={lamp}
         color={WARM}
         position={LAMP}
         target={lampTarget}
-        intensity={70}
+        intensity={LAMP_INTENSITY}
         angle={0.36}
         penumbra={0.85}
         decay={1.6}
@@ -98,7 +114,7 @@ export function Hall() {
         />
       </mesh>
 
-      <LightBeam />
+      <LightBeam orbit={orbit} />
     </>
   );
 }
@@ -107,7 +123,7 @@ export function Hall() {
  * The spotlight's visible beam: an open cone, brightest at the lamp and fading towards the
  * floor and its own edges. Additive and very faint; the only "volumetric" touch in the hall.
  */
-function LightBeam() {
+function LightBeam({ orbit }: { orbit: OrbitState }) {
   const { geometry, material, position, quaternion } = useMemo(() => {
     const direction = LAMP_TARGET.clone().sub(LAMP);
     const length = direction.length() * 1.15;
@@ -120,7 +136,7 @@ function LightBeam() {
       transparent: true,
       depthWrite: false,
       blending: AdditiveBlending,
-      uniforms: { uColour: { value: new Color(WARM) }, uStrength: { value: 0.07 } },
+      uniforms: { uColour: { value: new Color(WARM) }, uStrength: { value: BEAM_STRENGTH } },
       vertexShader: /* glsl */ `
         varying float vAlong;
         varying float vFacing;
@@ -151,6 +167,11 @@ function LightBeam() {
     },
     [geometry, material],
   );
+
+  const beam = useRef<{ material: ShaderMaterial }>({ material });
+  useFrame(() => {
+    beam.current.material.uniforms.uStrength.value = BEAM_STRENGTH * lampLevel(orbit);
+  });
 
   return <mesh geometry={geometry} material={material} position={position} quaternion={quaternion} renderOrder={3} />;
 }
