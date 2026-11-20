@@ -6,7 +6,9 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) clamp(var(--space-4), 4vw, var(--space-7));
+  padding: var(--space-4) clamp(var(--space-4), 4vw, var(--space-7)) var(--space-6);
+  /* A soft fade, so a project's page can scroll beneath the bar and stay legible. */
+  background: linear-gradient(to bottom, rgb(7 11 20 / 0.92) 40%, rgb(7 11 20 / 0));
   pointer-events: none;
 }
 
@@ -27,7 +29,8 @@
   color: var(--hall-muted);
 }
 
-.home {
+.home,
+.back {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -44,7 +47,8 @@
     text-decoration-color var(--dur-fast) var(--ease-out);
 }
 
-.home:hover {
+.home:hover,
+.back:hover {
   color: var(--hall-ink);
   text-decoration-color: var(--color-accent);
 }
@@ -53,4 +57,12 @@
   .sub {
     display: none;
   }
+}
+
+.back {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--hall-ink);
 }

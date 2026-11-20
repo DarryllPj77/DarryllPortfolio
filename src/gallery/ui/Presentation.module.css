@@ -1,0 +1,157 @@
+/* An opened project: a scrolling page over the darkened hall. Screens first, words few. */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgb(7 11 20 / 0.94);
+}
+
+.sheet {
+  width: min(100% - 2 * clamp(var(--space-4), 4vw, var(--space-7)), 1180px);
+  margin-inline: auto;
+  padding-block: calc(var(--space-8) + var(--space-3)) var(--space-8);
+}
+
+/* The first screen: it arrives from the 3D case, so it sits high and centred like the case did. */
+.hero {
+  display: grid;
+  justify-items: center;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  max-width: min(100%, var(--w));
+  height: auto;
+  margin-inline: auto;
+  border: 1px solid var(--hall-line);
+  border-radius: 2px;
+  background: var(--hall-panel);
+}
+
+.hero .image {
+  /* It moves and scales from its top-left corner during the hand-off. */
+  transform-origin: 0 0;
+  max-height: calc(100dvh - 2 * var(--space-8));
+  width: auto;
+  max-width: min(100%, var(--w));
+  object-fit: contain;
+}
+
+/* Name on the left, the few facts on the right; stacked on a phone. */
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: var(--space-5) var(--space-7);
+  margin-block: clamp(var(--space-6), 6vw, var(--space-8));
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--hall-line);
+}
+
+.identity {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.number {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.24em;
+  color: var(--hall-muted);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: 380;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--hall-ink);
+}
+
+.title:focus {
+  outline: none;
+}
+
+.facts {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.meta {
+  font-size: var(--fs-sm);
+  color: var(--hall-muted);
+}
+
+.stack {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  color: var(--hall-ink);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link,
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  color: var(--hall-muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 5px;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    text-decoration-color var(--dur-fast) var(--ease-out);
+}
+
+.link:hover,
+.back:hover {
+  color: var(--hall-ink);
+  text-decoration-color: var(--color-accent);
+}
+
+.screens {
+  display: grid;
+  gap: clamp(var(--space-6), 7vw, var(--space-8));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-8);
+}
+
+.back {
+  padding: 0 var(--space-4);
+  border: 1px solid var(--hall-line);
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+}

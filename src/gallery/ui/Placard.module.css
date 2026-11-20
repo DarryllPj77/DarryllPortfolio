@@ -46,7 +46,8 @@
   list-style: none;
 }
 
-.link {
+.link,
+.open {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
@@ -63,7 +64,18 @@
     text-decoration-color var(--dur-fast) var(--ease-out);
 }
 
-.link:hover {
+.link:hover,
+.open:hover {
   color: var(--hall-ink);
   text-decoration-color: var(--color-accent);
+}
+
+/* The way in: the one solid control on the placard. */
+.open {
+  padding: 0 var(--space-3);
+  border: 1px solid rgb(129 140 248 / 0.45);
+  border-radius: 999px;
+  background: rgb(129 140 248 / 0.08);
+  color: var(--hall-ink);
+  cursor: pointer;
 }

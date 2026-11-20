@@ -10,10 +10,13 @@ import {
   Quaternion,
   ShaderMaterial,
   Vector3,
+  type AmbientLight,
+  type DirectionalLight,
   type SpotLight,
 } from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { OrbitState } from '../orbit/OrbitState';
+import type { ShowState } from '../show/ShowState';
 import { createFloorTexture } from './hallTextures';
 import { EXHIBIT_Y, HALL_COLOUR, ORBIT_RADIUS } from './layout';
 
@@ -22,6 +25,9 @@ const LAMP = new Vector3(0, 6.4, ORBIT_RADIUS + 2.2);
 const LAMP_TARGET = new Vector3(0, EXHIBIT_Y - 0.4, ORBIT_RADIUS);
 const WARM = '#fff4e6';
 const LAMP_INTENSITY = 70;
+const FILL_INTENSITY = 0.18;
+const RIM_INTENSITY = 0.3;
+const ENV_INTENSITY = 0.32;
 const BEAM_STRENGTH = 0.07;
 
 /**
@@ -36,7 +42,7 @@ const lampLevel = (orbit: OrbitState) => 0.55 + 0.45 * Math.max(...orbit.emphasi
  * environment for the metal's reflections, and three lights: a low ambient fill, the warm
  * exhibit spotlight fixed over the front position, and a cool rim light from behind.
  */
-export function Hall({ orbit }: { orbit: OrbitState }) {
+export function Hall({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
   // Three.js objects are changed in place; they are read from the store when needed.
   const get = useThree((s) => s.get);
 
@@ -57,7 +63,7 @@ export function Hall({ orbit }: { orbit: OrbitState }) {
     const pmrem = new PMREMGenerator(gl);
     const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
     scene.environment = env;
-    scene.environmentIntensity = 0.32;
+    scene.environmentIntensity = ENV_INTENSITY;
     pmrem.dispose();
     return () => {
       scene.environment = null;
@@ -79,13 +85,19 @@ export function Hall({ orbit }: { orbit: OrbitState }) {
   }, []);
 
   const lamp = useRef<SpotLight>(null);
+  const fill = useRef<AmbientLight>(null);
+  const rim = useRef<DirectionalLight>(null);
   useFrame(() => {
-    if (lamp.current) lamp.current.intensity = LAMP_INTENSITY * lampLevel(orbit);
+    // The ring dips the exhibit light between cases; the moment (entrance, opening) sets the rest.
+    if (lamp.current) lamp.current.intensity = LAMP_INTENSITY * lampLevel(orbit) * show.lamp;
+    if (fill.current) fill.current.intensity = FILL_INTENSITY * show.hall;
+    if (rim.current) rim.current.intensity = RIM_INTENSITY * show.hall;
+    get().scene.environmentIntensity = ENV_INTENSITY * show.hall;
   });
 
   return (
     <>
-      <ambientLight color="#b4c3e0" intensity={0.18} />
+      <ambientLight ref={fill} color="#b4c3e0" intensity={FILL_INTENSITY} />
       <primitive object={lampTarget} />
       <spotLight
         ref={lamp}
@@ -98,7 +110,7 @@ export function Hall({ orbit }: { orbit: OrbitState }) {
         decay={1.6}
         distance={18}
       />
-      <directionalLight color="#38bdf8" position={[0, 4, -7]} intensity={0.3} />
+      <directionalLight ref={rim} color="#38bdf8" position={[0, 4, -7]} intensity={RIM_INTENSITY} />
 
       <mesh rotation-x={-Math.PI / 2} renderOrder={1}>
         <planeGeometry args={[60, 60]} />
@@ -114,7 +126,7 @@ export function Hall({ orbit }: { orbit: OrbitState }) {
         />
       </mesh>
 
-      <LightBeam orbit={orbit} />
+      <LightBeam orbit={orbit} show={show} />
     </>
   );
 }
@@ -123,7 +135,7 @@ export function Hall({ orbit }: { orbit: OrbitState }) {
  * The spotlight's visible beam: an open cone, brightest at the lamp and fading towards the
  * floor and its own edges. Additive and very faint; the only "volumetric" touch in the hall.
  */
-function LightBeam({ orbit }: { orbit: OrbitState }) {
+function LightBeam({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
   const { geometry, material, position, quaternion } = useMemo(() => {
     const direction = LAMP_TARGET.clone().sub(LAMP);
     const length = direction.length() * 1.15;
@@ -170,7 +182,7 @@ function LightBeam({ orbit }: { orbit: OrbitState }) {
 
   const beam = useRef<{ material: ShaderMaterial }>({ material });
   useFrame(() => {
-    beam.current.material.uniforms.uStrength.value = BEAM_STRENGTH * lampLevel(orbit);
+    beam.current.material.uniforms.uStrength.value = BEAM_STRENGTH * lampLevel(orbit) * show.lamp;
   });
 
   return <mesh geometry={geometry} material={material} position={position} quaternion={quaternion} renderOrder={3} />;

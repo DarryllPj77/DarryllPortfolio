@@ -19,9 +19,9 @@ export interface Placement {
  * the camera). `emphasis` 1 keeps a case on the ring, 0 steps it back by RECEDE. Each case
  * turns only part of the way with the ring, so the side cases still show their screens.
  */
-export function placeOnRing(index: number, ringAngle: number, emphasis: number): Placement {
+export function placeOnRing(index: number, ringAngle: number, emphasis: number, withdraw = 0): Placement {
   const angle = fold(index * TURN + ringAngle);
-  const radius = ORBIT_RADIUS + RECEDE * (1 - emphasis);
+  const radius = ORBIT_RADIUS + RECEDE * (1 - emphasis) + withdraw;
   return { x: Math.sin(angle) * radius, z: Math.cos(angle) * radius, yaw: angle * FACING_SHARE };
 }
 
@@ -51,4 +51,13 @@ export function framingLift(fovDeg: number, aspect: number): number {
   const tanV = Math.tan(MathUtils.degToRad(fovDeg) / 2);
   const spare = framingDistance(fovDeg, aspect) * tanV - FRAME_H;
   return Math.max(0, spare) * 0.45;
+}
+
+/** Share of the view the opened case fills when the camera has moved in. */
+const OPEN_FILL = 0.7;
+
+/** Distance from the opened case at which it fills about 70% of the view, whichever way the screen is turned. */
+export function openDistance(fovDeg: number, aspect: number): number {
+  const tanV = Math.tan(MathUtils.degToRad(fovDeg) / 2);
+  return Math.max(HEX_HALF_HEIGHT / (OPEN_FILL * tanV), HEX_RADIUS / (OPEN_FILL * tanV * aspect));
 }

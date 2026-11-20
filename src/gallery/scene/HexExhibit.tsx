@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber';
 import { useLayoutEffect, useMemo } from 'react';
 import type { BufferGeometry, Material, Texture } from 'three';
 import type { OrbitState } from '../orbit/OrbitState';
+import type { ShowState } from '../show/ShowState';
 import { applyEmphasis, createEdgeMaterial, createFaceMaterial } from './exhibitMaterials';
 import { createFaceGeometry, type FocalPoint } from './hexGeometry';
 import { HEX_FRONT_Z } from './layout';
@@ -21,6 +22,8 @@ interface HexExhibitProps {
   focus: FocalPoint;
   /** The ring: how "in front" this case is decides its brightness and its lit line. */
   orbit: OrbitState;
+  /** The moment under way: how much light it leaves this case. */
+  show: ShowState;
   index: number;
 }
 
@@ -29,12 +32,12 @@ interface HexExhibitProps {
  * hexagonal screen behind a thin layer of glass, and an indigo line that lights as the case
  * comes to the front.
  */
-export function HexExhibit({ parts, texture, image, focus, orbit, index }: HexExhibitProps) {
+export function HexExhibit({ parts, texture, image, focus, orbit, show, index }: HexExhibitProps) {
   const faceGeometry = useMemo(() => createFaceGeometry(image, focus), [image, focus]);
   const faceMaterial = useMemo(() => createFaceMaterial(texture), [texture]);
   const edgeMaterial = useMemo(() => createEdgeMaterial(), []);
 
-  useFrame(() => applyEmphasis(faceMaterial, edgeMaterial, orbit.emphasis[index]));
+  useFrame(() => applyEmphasis(faceMaterial, edgeMaterial, orbit.emphasis[index], show.caseLight[index]));
 
   useLayoutEffect(
     () => () => {

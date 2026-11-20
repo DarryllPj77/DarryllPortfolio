@@ -1,21 +1,52 @@
 import { useFrame, useLoader, useThree, type ThreeEvent } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
-import { MeshBasicMaterial, MeshPhysicalMaterial, TextureLoader, type Group, type Mesh } from 'three';
+import { MeshBasicMaterial, MeshPhysicalMaterial, TextureLoader, Vector3, type Group, type Mesh } from 'three';
 import type { GalleryProject } from '../data';
 import type { OrbitState } from '../orbit/OrbitState';
+import type { ScreenRect, ShowState } from '../show/ShowState';
 import { HexExhibit, type SharedExhibitParts } from './HexExhibit';
 import { createBodyGeometry, createEdgeGeometry } from './hexGeometry';
 import { createShadowTexture } from './hallTextures';
-import { EXHIBIT_Y } from './layout';
+import { EXHIBIT_Y, FACE_RADIUS, HEX_FRONT_Z } from './layout';
 import { placeOnRing } from './placement';
 import { prepareScreenshots } from './textures';
 
 /** A press that moved further than this (in pixels) was a drag, not a click. */
 const CLICK_SLOP = 6;
 
+/** The screen's bounding box in the case's own space: its six corners, just in front of the body. */
+const FACE_CORNERS = Array.from({ length: 6 }, (_, i) => {
+  const a = (Math.PI / 3) * i;
+  return new Vector3(Math.cos(a) * FACE_RADIUS, Math.sin(a) * FACE_RADIUS, HEX_FRONT_Z);
+});
+const corner = new Vector3();
+
+/** Where a case's hexagonal screen appears on the page: its bounding box in CSS pixels. */
+function screenRectOf(
+  group: Group,
+  camera: Parameters<Vector3['project']>[0],
+  size: { width: number; height: number; left: number; top: number },
+): ScreenRect {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const c of FACE_CORNERS) {
+    corner.copy(c).applyMatrix4(group.matrixWorld).project(camera);
+    const x = ((corner.x + 1) / 2) * size.width + size.left;
+    const y = ((1 - corner.y) / 2) * size.height + size.top;
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y);
+    maxY = Math.max(maxY, y);
+  }
+  return { left: minX, top: minY, width: maxX - minX, height: maxY - minY };
+}
+
 interface OrbitProps {
   projects: GalleryProject[];
   orbit: OrbitState;
+  show: ShowState;
   /** A case was clicked: a side case comes to the front; the front case opens (phase 4). */
   onSelect: (index: number) => void;
   /** The pointer is over a case, or has left all of them. */
@@ -26,7 +57,7 @@ interface OrbitProps {
  * The three display cases on their ring, each with its floor shadow and its reflection.
  * Every frame they are placed from the ring's live state, so turning costs no React render.
  */
-export function Orbit({ projects, orbit, onSelect, onHover }: OrbitProps) {
+export function Orbit({ projects, orbit, show, onSelect, onHover }: OrbitProps) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const textures = useLoader(
@@ -83,16 +114,25 @@ export function Orbit({ projects, orbit, onSelect, onHover }: OrbitProps) {
   const reflections = useRef<(Group | null)[]>([]);
   const shadows = useRef<(Mesh | null)[]>([]);
 
-  useFrame(() => {
+  useFrame((state) => {
     for (let i = 0; i < projects.length; i++) {
-      const p = placeOnRing(i, orbit.angle, orbit.emphasis[i]);
+      const p = placeOnRing(i, orbit.angle + show.turn, orbit.emphasis[i], show.withdraw[i]);
+      // During the entrance each case still has some way to come from deep in the hall.
+      const z = p.z - show.depth[i];
       for (const g of [cases.current[i], reflections.current[i]]) {
-        g?.position.set(p.x, EXHIBIT_Y, p.z);
+        g?.position.set(p.x, EXHIBIT_Y, z);
         g?.rotation.set(0, p.yaw, 0);
       }
       // Laid flat, then turned with its case (a turn in the plane's own z is a turn about world y).
-      shadows.current[i]?.position.set(p.x, 0.01, p.z);
+      shadows.current[i]?.position.set(p.x, 0.01, z);
       shadows.current[i]?.rotation.set(-Math.PI / 2, 0, p.yaw);
+    }
+    // While a case opens, measure where its screen is on the page: the presentation starts
+    // its screenshot exactly there.
+    const opened = cases.current[show.opened];
+    if ((show.phase === 'opening' || show.phase === 'open') && opened) {
+      opened.updateWorldMatrix(true, false);
+      show.setScreenRect(screenRectOf(opened, state.camera, state.size));
     }
   });
 
@@ -123,6 +163,7 @@ export function Orbit({ projects, orbit, onSelect, onHover }: OrbitProps) {
             image={project.cover}
             focus={project.focus}
             orbit={orbit}
+            show={show}
             index={i}
           />
         </group>
@@ -142,6 +183,7 @@ export function Orbit({ projects, orbit, onSelect, onHover }: OrbitProps) {
               image={project.cover}
               focus={project.focus}
               orbit={orbit}
+              show={show}
               index={i}
             />
           </group>

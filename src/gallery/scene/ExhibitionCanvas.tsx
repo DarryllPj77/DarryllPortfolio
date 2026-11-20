@@ -4,6 +4,7 @@ import { ACESFilmicToneMapping } from 'three';
 import type { GalleryProject } from '../data';
 import type { OrbitState } from '../orbit/OrbitState';
 import { useOrbitDrag } from '../orbit/useOrbitDrag';
+import type { ShowState } from '../show/ShowState';
 import { CameraRig } from './CameraRig';
 import { Hall } from './Hall';
 import { Orbit } from './Orbit';
@@ -12,6 +13,9 @@ import styles from './ExhibitionCanvas.module.css';
 interface ExhibitionCanvasProps {
   projects: GalleryProject[];
   orbit: OrbitState;
+  show: ShowState;
+  /** Whether the ring may be dragged now (only while browsing). */
+  canDrag: boolean;
   /** A case was clicked or tapped. */
   onSelect: (index: number) => void;
   /** The graphics context was lost or could not start: show the HTML exhibition instead. */
@@ -22,18 +26,26 @@ interface ExhibitionCanvasProps {
 const maxDpr = () => (window.matchMedia('(pointer: coarse)').matches ? 1.5 : 1.75);
 
 /**
- * Moves the ring on each frame and asks for the next frame only while it is moving: a still
- * hall draws nothing. Input wakes it again through the ring's own `wake`.
+ * Advances the ring and the moment under way on each frame, and asks for the next frame only
+ * while something is moving: a still hall, or a hall behind an open project, draws nothing.
+ * Input wakes it again through each one's `wake`.
  */
-function OrbitDriver({ orbit }: { orbit: OrbitState }) {
+function Driver({ orbit, show }: { orbit: OrbitState; show: ShowState }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
-    orbit.setWake(() => invalidate());
+    const wake = () => invalidate();
+    orbit.setWake(wake);
+    show.setWake(wake);
     invalidate();
-    return () => orbit.setWake(() => {});
-  }, [orbit, invalidate]);
+    return () => {
+      orbit.setWake(() => {});
+      show.setWake(() => {});
+    };
+  }, [orbit, show, invalidate]);
   useFrame((state, dt) => {
-    if (orbit.step(dt)) state.invalidate();
+    const ring = orbit.step(dt);
+    const moment = show.step(dt);
+    if (ring || moment) state.invalidate();
   });
   return null;
 }
@@ -42,9 +54,9 @@ function OrbitDriver({ orbit }: { orbit: OrbitState }) {
  * The 3D exhibition. It draws a frame only when something changes (`frameloop="demand"`).
  * Purely visual: the HTML controls carry the meaning, so it is hidden from screen readers.
  */
-export default function ExhibitionCanvas({ projects, orbit, onSelect, onFail }: ExhibitionCanvasProps) {
+export default function ExhibitionCanvas({ projects, orbit, show, canDrag, onSelect, onFail }: ExhibitionCanvasProps) {
   const stage = useRef<HTMLDivElement>(null);
-  useOrbitDrag(stage, orbit);
+  useOrbitDrag(stage, orbit, canDrag);
 
   // A context lost while the scene is mounted counts as a failure; React Three Fiber's own
   // release of the context on unmount does not, so the listener goes when the scene does.
@@ -58,11 +70,11 @@ export default function ExhibitionCanvas({ projects, orbit, onSelect, onFail }: 
   );
 
   const setHoverCursor = (index: number | null) => {
-    if (stage.current && !orbit.isDragging) stage.current.dataset.hover = index === null ? '' : 'case';
+    if (stage.current && !orbit.isDragging) stage.current.dataset.hover = index === null || !canDrag ? '' : 'case';
   };
 
   return (
-    <div ref={stage} className={styles.stage} aria-hidden="true">
+    <div ref={stage} className={styles.stage} data-browsing={canDrag || undefined} aria-hidden="true">
       <Canvas
         frameloop="demand"
         dpr={[1, maxDpr()]}
@@ -77,12 +89,12 @@ export default function ExhibitionCanvas({ projects, orbit, onSelect, onFail }: 
           loss.current = { el, fn };
         }}
       >
-        <OrbitDriver orbit={orbit} />
+        <Driver orbit={orbit} show={show} />
         {/* The hall first: the camera rig measures its fog from where the camera stands. */}
-        <Hall orbit={orbit} />
-        <CameraRig />
+        <Hall orbit={orbit} show={show} />
+        <CameraRig show={show} />
         <Suspense fallback={null}>
-          <Orbit projects={projects} orbit={orbit} onSelect={onSelect} onHover={setHoverCursor} />
+          <Orbit projects={projects} orbit={orbit} show={show} onSelect={onSelect} onHover={setHoverCursor} />
         </Suspense>
       </Canvas>
     </div>

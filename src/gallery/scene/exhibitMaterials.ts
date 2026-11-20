@@ -17,9 +17,12 @@ export const createEdgeMaterial = () =>
     toneMapped: false,
   });
 
-/** Brightness of the screen and of the lit line, for an emphasis from 0 (background) to 1 (in front). */
-export function applyEmphasis(face: MeshBasicMaterial, edge: MeshBasicMaterial, emphasis: number): void {
-  face.color.setScalar(DIMMED + (1 - DIMMED) * emphasis);
-  edge.opacity = 0.9 * emphasis;
-  edge.visible = emphasis > 0.01;
+/**
+ * Brightness of the screen and of the lit line, for an emphasis from 0 (background) to 1
+ * (in front), times the light the moment leaves it (the entrance, or another case opening).
+ */
+export function applyEmphasis(face: MeshBasicMaterial, edge: MeshBasicMaterial, emphasis: number, light = 1): void {
+  face.color.setScalar((DIMMED + (1 - DIMMED) * emphasis) * light);
+  edge.opacity = 0.9 * emphasis * light;
+  edge.visible = emphasis * light > 0.01;
 }

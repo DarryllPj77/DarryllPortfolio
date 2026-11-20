@@ -13,10 +13,11 @@ const SAMPLE_MS = 90;
  * settle. Movement after the press is followed on the window, so a drag that leaves the
  * stage still ends cleanly, and the scene's own click handling keeps working.
  */
-export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitState) {
+export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitState, enabled = true) {
   useEffect(() => {
     const el = stage.current;
-    if (!el) return;
+    // Only while browsing: not during the entrance, nor behind an open project.
+    if (!el || !enabled) return;
 
     let startX = 0;
     let pressing = false;
@@ -78,5 +79,5 @@ export function useOrbitDrag(stage: RefObject<HTMLElement | null>, orbit: OrbitS
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', finish);
     };
-  }, [stage, orbit]);
+  }, [stage, orbit, enabled]);
 }
