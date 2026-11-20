@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router';
-import { mobileNav, sections, type ViewMeta } from '../../data/navigation';
+import { galleryLink, mobileNav, sections, type ViewMeta } from '../../data/navigation';
 import { getSocial } from '../../data/socials';
 import { duration, ease, stagger } from '../../motion/tokens';
 import { ExternalLink } from '../ui/ExternalLink';
@@ -49,14 +49,29 @@ export function MobileMenu({ open, meta, onClose }: MobileMenuProps) {
               variants={{ show: { transition: { staggerChildren: stagger.tight } } }}
             >
               {mobileNav.map((id) => {
+                const item = {
+                  variants: { hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } },
+                  transition: { duration: duration.fast, ease: ease.out },
+                };
+                if (id === 'gallery') {
+                  return (
+                    <motion.li key={id} {...item}>
+                      <ExternalLink href={galleryLink.href} className={styles.link} onClick={onClose}>
+                        <span className={styles.index} aria-hidden="true">
+                          ↗
+                        </span>
+                        <span className={styles.label}>{galleryLink.label}</span>
+                        <span className={styles.file} aria-hidden="true">
+                          {galleryLink.file}
+                        </span>
+                      </ExternalLink>
+                    </motion.li>
+                  );
+                }
                 const section = sections[id];
                 const active = meta.known && meta.section === id;
                 return (
-                  <motion.li
-                    key={id}
-                    variants={{ hidden: { opacity: 0, y: 6 }, show: { opacity: 1, y: 0 } }}
-                    transition={{ duration: duration.fast, ease: ease.out }}
-                  >
+                  <motion.li key={id} {...item}>
                     <Link
                       to={section.path}
                       className={styles.link}

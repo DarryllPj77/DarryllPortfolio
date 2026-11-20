@@ -26,8 +26,7 @@ export type IconName =
   | 'calendar'
   | 'clock'
   | 'braces'
-  | 'image'
-  | 'expand';
+  | 'image';
 
 const strokePaths: Partial<Record<IconName, ReactNode>> = {
   image: (
@@ -37,7 +36,6 @@ const strokePaths: Partial<Record<IconName, ReactNode>> = {
       <path d="m21 15.5-5-5-9 9" />
     </>
   ),
-  expand: <path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7" />,
   home: (
     <>
       <path d="M3 10.5 12 3l9 7.5" />

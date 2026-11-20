@@ -19,7 +19,7 @@ import {
   type Bounds,
 } from '../components/companion/companionPlacement';
 import { companionLines, getCompanionLine } from '../data/companion';
-import { explorerTree, primaryNav, sections } from '../data/navigation';
+import { explorerTree, galleryLink, primaryNav, sections } from '../data/navigation';
 import { projects } from '../data/projects';
 
 const bounds: Bounds = { left: 300, top: 60, right: 1268, bottom: 828 };
@@ -285,11 +285,12 @@ describe('tap to move (touch)', () => {
 describe('companion lines', () => {
   it('has a line for every Explorer file and folder and every top navigation link', () => {
     const keys = [
-      ...primaryNav.map((id) => sections[id].path),
+      // The keys each link carries in data-companion; the Gallery opens a new tab and has its own.
+      ...primaryNav.map((id) => (id === 'gallery' ? galleryLink.companion : sections[id].path)),
       ...explorerTree.flatMap((node) =>
         node.kind === 'folder'
           ? [`/${node.id}`, ...node.children.map((f) => `${f.path}${f.hash ?? ''}`)]
-          : [`${node.path}${node.hash ?? ''}`],
+          : [node.external ? galleryLink.companion : `${node.path}${node.hash ?? ''}`],
       ),
     ];
     for (const key of keys) expect(getCompanionLine(key), key).toBeDefined();

@@ -1,14 +1,17 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import App from '../App';
-import { exhibits, screensOf } from '../data/gallery';
-import { mobileNav, primaryNav } from '../data/navigation';
+import { companionLines } from '../data/companion';
+import { galleryLink, mobileNav, primaryNav, sections } from '../data/navigation';
+import { GalleryApp } from '../gallery/GalleryApp';
+import { galleryProjects } from '../gallery/data';
 import { INTRO_SEEN_KEY } from '../intro/introContext';
+
+const root = process.cwd();
 
 /** Width and height stored in a PNG's header or a JPEG's start-of-frame marker. */
 function imageSize(bytes: Buffer) {
@@ -24,96 +27,90 @@ function imageSize(bytes: Buffer) {
   throw new Error('No image size found');
 }
 
-describe('gallery data', () => {
-  it('shows the three projects, Academic Sentinel first and as the main exhibit', () => {
-    expect(exhibits.map((e) => e.project.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync']);
-    expect(exhibits.filter((e) => e.main).map((e) => e.project.slug)).toEqual(['academic-sentinel']);
+describe('gallery exhibits', () => {
+  const shots = galleryProjects.flatMap((g) => [g.cover, ...g.screens]);
+
+  it('are the three projects, Academic Sentinel first', () => {
+    expect(galleryProjects.map((g) => g.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync']);
   });
 
-  it('uses only real screenshot files, at their stored size', () => {
-    for (const shot of exhibits.flatMap(screensOf)) {
-      const file = resolve(process.cwd(), 'public', `.${shot.src}`);
+  it('use only real screenshot files, at their stored size, each once', () => {
+    for (const shot of shots) {
+      const file = resolve(root, 'public', `.${shot.src}`);
       expect(existsSync(file), file).toBe(true);
       expect(imageSize(readFileSync(file)), shot.src).toEqual({ width: shot.width, height: shot.height });
       expect(shot.alt.length, shot.src).toBeGreaterThan(40);
     }
+    expect(new Set(shots.map((s) => s.src)).size).toBe(shots.length);
   });
 
-  it('opens PreMatch and SpendSync case studies on the same screen as their cover', () => {
-    for (const e of exhibits.filter((x) => !x.main)) expect(e.cover).toBe(e.project.hero);
+  it('leave out screens with a third party’s details or mostly game footage', () => {
+    expect(shots.some((s) => /teacher-|violation-report-export|evidence-review/.test(s.src))).toBe(false);
   });
 
-  it('leaves out screens showing a third party’s details or game footage', () => {
-    const srcs = exhibits.flatMap(screensOf).map((s) => s.src);
-    expect(srcs.some((s) => /teacher-|violation-report-export|evidence-review/.test(s))).toBe(false);
+  it('name at most four technologies, each from the project’s own stack', () => {
+    for (const g of galleryProjects) {
+      expect(g.stack.length, g.slug).toBeLessThanOrEqual(4);
+      for (const tech of g.stack) expect(g.project.stack, g.slug).toContain(tech);
+    }
+  });
+});
+
+describe('gallery as a separate page', () => {
+  it('has its own HTML entry, built alongside the portfolio and served at /gallery', () => {
+    expect(readFileSync(resolve(root, 'gallery.html'), 'utf8')).toContain('/src/gallery/main.tsx');
+    expect(readFileSync(resolve(root, 'vite.config.ts'), 'utf8')).toContain("gallery.html'");
+    const { rewrites } = JSON.parse(readFileSync(resolve(root, 'vercel.json'), 'utf8')) as {
+      rewrites: { source: string; destination: string }[];
+    };
+    // The Gallery rule must come before the portfolio's catch-all.
+    expect(rewrites[0]).toEqual({ source: '/gallery', destination: '/gallery.html' });
+    expect(rewrites.at(-1)?.destination).toBe('/index.html');
   });
 
-  it('is in the top navigation and the mobile menu, after Projects', () => {
+  it('is not a section of the portfolio', () => {
+    expect(Object.keys(sections)).not.toContain('gallery');
     expect(primaryNav.indexOf('gallery')).toBe(primaryNav.indexOf('projects') + 1);
     expect(mobileNav.indexOf('gallery')).toBe(mobileNav.indexOf('projects') + 1);
+    expect(companionLines[galleryLink.companion]?.text).toMatch(/new tab/);
+  });
+
+  it('opens from the top nav and the Explorer in a new tab', () => {
+    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>,
+    );
+    const links = [
+      within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: /gallery/i }),
+      within(screen.getByRole('navigation', { name: 'Workspace files' })).getByRole('link', { name: /gallery/i }),
+    ];
+    for (const link of links) {
+      expect(link).toHaveAttribute('href', '/gallery');
+      expect(link).toHaveAttribute('target', '_blank');
+      expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(link).toHaveAccessibleName(/opens in a new tab/i);
+    }
   });
 });
 
 describe('gallery page', () => {
-  const renderAt = (path: string) => {
-    window.sessionStorage.setItem(INTRO_SEEN_KEY, '1');
-    return render(
-      <MemoryRouter initialEntries={[path]}>
-        <App />
-      </MemoryRouter>,
-    );
-  };
-  const exhibit = (name: string) => screen.getByRole('heading', { level: 2, name }).closest('li')!;
-
-  it('is reached from the top navigation', async () => {
-    const user = userEvent.setup();
-    renderAt('/');
-    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'Gallery' }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Gallery' })).toBeInTheDocument();
+  it('shows each project with its number, name and links, and a way back to the portfolio', () => {
+    render(<GalleryApp />);
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Academic Sentinel',
       'PreMatch Tracker',
       'SpendSync',
     ]);
-  });
-
-  it('describes each screen for screen readers, with no captions on the wall', () => {
-    renderAt('/gallery');
-    for (const e of exhibits) {
-      expect(within(exhibit(e.project.name)).getByRole('img', { name: e.cover.alt })).toBeInTheDocument();
-      expect(within(exhibit(e.project.name)).queryByText(e.cover.caption)).not.toBeInTheDocument();
+    for (const [i, g] of galleryProjects.entries()) {
+      const item = screen.getByRole('heading', { level: 2, name: g.project.name }).closest('li')!;
+      expect(within(item).getByText(`0${i + 1} / 03`)).toBeInTheDocument();
+      expect(within(item).getByRole('img', { name: g.cover.alt })).toHaveAttribute('src', g.cover.src);
+      expect(within(item).getAllByRole('link')).toHaveLength(g.links.length);
     }
-  });
-
-  it('steps Academic Sentinel through its screens only when asked', async () => {
-    const user = userEvent.setup();
-    renderAt('/gallery');
-    const main = exhibit('Academic Sentinel');
-    const ticks = within(main).getAllByRole('button', { name: /^screen \d of \d/i });
-    expect(ticks).toHaveLength(3);
-    expect(ticks[0]).toHaveAttribute('aria-pressed', 'true');
-    await user.click(ticks[1]);
-    expect(ticks[1]).toHaveAttribute('aria-pressed', 'true');
-    expect(within(main).getByRole('img', { name: exhibits[0].more[0].alt })).toBeInTheDocument();
-    // The other exhibits have no screen controls.
-    expect(within(exhibit('SpendSync')).queryAllByRole('button', { name: /^screen/i })).toHaveLength(0);
-  });
-
-  it('opens an exhibit’s screens full size in the viewer', async () => {
-    const user = userEvent.setup();
-    renderAt('/gallery');
-    await user.click(within(exhibit('PreMatch Tracker')).getByRole('button', { name: /full size/i }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByRole('img')).toHaveAttribute('src', exhibits[1].cover.src);
-    await user.keyboard('{Escape}');
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-  });
-
-  it('leads each exhibit to its case study', async () => {
-    const user = userEvent.setup();
-    renderAt('/gallery');
-    await user.click(within(exhibit('SpendSync')).getByRole('link', { name: /view case study/i }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'SpendSync' })).toBeInTheDocument();
-    expect(screen.getAllByRole('img', { name: exhibits[2].cover.alt }).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: /darryllportfolio/i })).toHaveAttribute('href', '/');
+    // No portfolio shell here.
+    expect(screen.queryByRole('navigation', { name: 'Workspace files' })).not.toBeInTheDocument();
   });
 });

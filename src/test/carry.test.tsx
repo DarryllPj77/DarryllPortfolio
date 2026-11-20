@@ -33,8 +33,8 @@ describe('Move Darryll destinations', () => {
     document.body.innerHTML = '';
   });
 
-  it('lists Home, Projects, Gallery, About, Skills and Contact, and travels only while it moves', () => {
-    expect(avatarDocks.map((d) => d.id)).toEqual(['home', 'projects', 'gallery', 'about', 'skills', 'contact']);
+  it('lists Home, Projects, About, Skills and Contact, and travels only while it moves', () => {
+    expect(avatarDocks.map((d) => d.id)).toEqual(['home', 'projects', 'about', 'skills', 'contact']);
     expect(avatarDocks.find((d) => d.id === 'contact')?.waveOnArrival).toBe(true);
     expect(isDockId('certifications')).toBe(false);
     expect([...TRAVELLING].sort()).toEqual(['dragging', 'dropping', 'moving', 'returning']);

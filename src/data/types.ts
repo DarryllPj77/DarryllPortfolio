@@ -1,4 +1,4 @@
-export type SectionId = 'home' | 'about' | 'projects' | 'gallery' | 'skills' | 'certifications' | 'contact';
+export type SectionId = 'home' | 'about' | 'projects' | 'skills' | 'certifications' | 'contact';
 
 export interface Internship {
   label: string;

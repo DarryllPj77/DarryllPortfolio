@@ -19,25 +19,39 @@ export interface SectionInfo {
 export const sections: Record<SectionId, SectionInfo> = {
   home: { id: 'home', label: 'Home', marker: 'Introduction', index: '01', path: '/', file: 'README.md' },
   projects: { id: 'projects', label: 'Projects', marker: 'Projects', index: '02', path: '/projects', file: 'projects/' },
-  gallery: { id: 'gallery', label: 'Gallery', marker: 'Gallery', index: '03', path: '/gallery', file: 'gallery/' },
-  about: { id: 'about', label: 'About', marker: 'About', index: '04', path: '/about', file: 'Darryll.md' },
-  skills: { id: 'skills', label: 'Skills', marker: 'Skills', index: '05', path: '/skills', file: 'tech-stack.json' },
+  about: { id: 'about', label: 'About', marker: 'About', index: '03', path: '/about', file: 'Darryll.md' },
+  skills: { id: 'skills', label: 'Skills', marker: 'Skills', index: '04', path: '/skills', file: 'tech-stack.json' },
   certifications: {
     id: 'certifications',
     label: 'Certifications',
     marker: 'Certifications',
-    index: '06',
+    index: '05',
     path: '/certifications',
     file: 'certifications/',
   },
-  contact: { id: 'contact', label: 'Contact', marker: 'Contact', index: '07', path: '/contact', file: 'contact.me' },
+  contact: { id: 'contact', label: 'Contact', marker: 'Contact', index: '06', path: '/contact', file: 'contact.me' },
 };
 
+/**
+ * The Gallery: a separate 3D exhibition of the projects, on its own page (gallery.html,
+ * served at /gallery). Every link to it opens a new tab, so the portfolio stays open.
+ */
+export const galleryLink = {
+  label: 'Gallery',
+  href: '/gallery',
+  file: 'gallery.html',
+  /** Darryll's line when it is clicked on desktop. */
+  companion: 'action:gallery',
+} as const;
+
+/** A navigation entry: a portfolio section, or the Gallery link (opens a new tab). */
+export type NavEntry = SectionId | 'gallery';
+
 /** Recruiter-friendly top navigation. */
-export const primaryNav: SectionId[] = ['home', 'projects', 'gallery', 'about', 'skills', 'contact'];
+export const primaryNav: NavEntry[] = ['home', 'projects', 'gallery', 'about', 'skills', 'contact'];
 
 /** Mobile menu: everything, since there is no Explorer on phones. */
-export const mobileNav: SectionId[] = ['home', 'projects', 'gallery', 'about', 'skills', 'certifications', 'contact'];
+export const mobileNav: NavEntry[] = ['home', 'projects', 'gallery', 'about', 'skills', 'certifications', 'contact'];
 
 /* ---------------- Explorer (workspace file tree) ---------------- */
 
@@ -51,6 +65,8 @@ export interface ExplorerFile {
   /** Plain-language name for tooltips and screen readers. */
   title: string;
   path: string;
+  /** Opens in a new tab (the Gallery), outside the portfolio's own pages. */
+  external?: boolean;
   hash?: string;
   icon: IconName;
   tone: FileTone;
@@ -73,7 +89,7 @@ const extensionStyle: Record<string, { icon: IconName; tone: FileTone }> = {
   json: { icon: 'braces', tone: 'success' },
   cert: { icon: 'award', tone: 'accent' },
   me: { icon: 'mail', tone: 'accent-2' },
-  png: { icon: 'image', tone: 'accent-2' },
+  html: { icon: 'image', tone: 'accent-2' },
 };
 
 function file(name: string, title: string, path: string, hash?: string): ExplorerFile {
@@ -91,7 +107,6 @@ export const explorerTree: ExplorerNode[] = [
     name: 'projects',
     children: projects.map((p) => file(p.fileName, p.name, `/projects/${p.slug}`)),
   },
-  { kind: 'folder', id: 'gallery', name: 'gallery', children: [file('showcase.png', 'Gallery', '/gallery')] },
   {
     kind: 'folder',
     id: 'skills',
@@ -105,6 +120,7 @@ export const explorerTree: ExplorerNode[] = [
     children: certifications.map((c) => file(c.fileName, c.name, '/certifications', `#${c.id}`)),
   },
   { kind: 'folder', id: 'contact', name: 'contact', children: [file('contact.me', 'Contact', '/contact')] },
+  { ...file(galleryLink.file, 'Project Gallery', galleryLink.href), external: true },
 ];
 
 /* ---------------- Route metadata ---------------- */

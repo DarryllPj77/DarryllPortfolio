@@ -6,6 +6,7 @@ import {
   type ExplorerFile,
   type ExplorerFolder,
 } from '../../data/navigation';
+import { ExternalLink } from '../ui/ExternalLink';
 import { Icon } from '../ui/Icon';
 import styles from './Explorer.module.css';
 
@@ -121,6 +122,26 @@ function FileRow({
   active: boolean;
   onNavigate?: () => void;
 }) {
+  if (file.external) {
+    // The Gallery: its own page in a new tab, so the portfolio stays where it is.
+    return (
+      <ExternalLink
+        href={file.path}
+        className={styles.file}
+        data-depth={depth}
+        data-tone={file.tone}
+        title={`${file.title} (opens in a new tab)`}
+        onClick={onNavigate}
+        data-companion="action:gallery"
+      >
+        <Icon name={file.icon} size={16} className={styles.fileIcon} />
+        <span className={styles.label}>
+          {file.name} <span aria-hidden="true">↗</span>
+        </span>
+        <span className="visually-hidden">: {file.title}</span>
+      </ExternalLink>
+    );
+  }
   return (
     <Link
       to={{ pathname: file.path, hash: file.hash ?? '' }}

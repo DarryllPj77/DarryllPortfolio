@@ -145,3 +145,10 @@
     padding-left: 0;
   }
 }
+
+/* The Gallery opens in a new tab: a small arrow says so. */
+.external {
+  margin-left: 3px;
+  font-size: var(--fs-xs);
+  color: var(--color-accent);
+}

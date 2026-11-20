@@ -1,7 +1,8 @@
 import { motion } from 'motion/react';
 import { Link } from 'react-router';
-import { primaryNav, sections, type ViewMeta } from '../../data/navigation';
+import { galleryLink, primaryNav, sections, type ViewMeta } from '../../data/navigation';
 import { duration, ease } from '../../motion/tokens';
+import { ExternalLink } from '../ui/ExternalLink';
 import styles from './TopBar.module.css';
 
 /** Recruiter-friendly primary navigation with a sliding underline. */
@@ -10,6 +11,18 @@ export function TopNav({ meta }: { meta: ViewMeta }) {
     <nav aria-label="Main" className={styles.nav}>
       <ul role="list" className={styles.navList}>
         {primaryNav.map((id) => {
+          if (id === 'gallery') {
+            return (
+              <li key={id}>
+                <ExternalLink href={galleryLink.href} className={styles.navLink} data-companion={galleryLink.companion}>
+                  {galleryLink.label}
+                  <span className={styles.external} aria-hidden="true">
+                    ↗
+                  </span>
+                </ExternalLink>
+              </li>
+            );
+          }
           const section = sections[id];
           const active = meta.known && meta.section === id;
           const exact = active && meta.path === section.path;
