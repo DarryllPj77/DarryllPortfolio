@@ -16,6 +16,22 @@ export interface CabinPlacement {
 }
 
 /**
+ * Where on the ring a case is drawn, from its place among the cases (`angle`, a share of the
+ * ring per case). With three or more cases that is the ring itself. With two, a true ring would
+ * park the other case straight behind the front one, out of sight; instead it rests to the
+ * right, a third of the way round. Turning, it comes in from the right while the front case
+ * swings away to the left and round behind to take its place: the ring still seems to turn one
+ * way, and nothing jumps.
+ */
+function displayAngle(angle: number, count: number): number {
+  if (count !== 2) return angle;
+  // Through the turn, -1 is resting on the right, 0 in front; -2 is in front again.
+  const a = angle > 0 ? angle / Math.PI - 2 : angle / Math.PI;
+  const SIDE = (2 * Math.PI) / 3;
+  return fold(a >= -1 ? a * SIDE : -SIDE + (a + 1) * (2 * Math.PI - SIDE));
+}
+
+/**
  * Where case `index` is when the ring is turned by `wheelAngle` (0 puts case 0 in front of the
  * camera). The cases are spread evenly round the ring, the next one waiting to the right of the
  * front and the previous one to the left, so "next" (scroll down, swipe left, → or ↓) brings
@@ -31,7 +47,7 @@ export function placeOnWheel(
   count: number,
   withdraw = 0,
 ): CabinPlacement {
-  const angle = fold(-index * turnFor(count) - wheelAngle);
+  const angle = displayAngle(fold(-index * turnFor(count) - wheelAngle), count);
   return {
     angle,
     x: -Math.sin(angle) * WHEEL_RADIUS,

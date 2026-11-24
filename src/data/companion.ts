@@ -1,7 +1,7 @@
 import { certifications } from './certifications';
 import { sections } from './navigation';
 import { profile } from './profile';
-import { featuredProject, projects } from './projects';
+import { featuredProject, galleryOnlyProjects, projects } from './projects';
 import type { Project } from './types';
 
 /**
@@ -59,7 +59,7 @@ export const companionLines: Record<string, CompanionLine> = {
   // Buttons Darryll explains when clicked on desktop (marked with data-companion="action:…").
   'action:gallery': {
     title: 'gallery.html',
-    text: `My ${projects.length} projects as a 3D exhibition, in their real screens. It opens in a new tab, so this page stays here.`,
+    text: `My ${projects.length + galleryOnlyProjects.length} projects as a 3D exhibition, in their real screens. It opens in a new tab, so this page stays here.`,
   },
   'action:resume': {
     title: 'resume.pdf',

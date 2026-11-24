@@ -1,11 +1,11 @@
-import { getProject } from '../data/projects';
+import { getAnyProject } from '../data/projects';
 import type { Project, ProjectLink } from '../data/types';
 import type { FocalPoint } from './scene/hexGeometry';
 
 /*
  * The Gallery's exhibits: one per project, shown in whichever collections list it (see
- * collections.ts). Names, years, credits and links come from the portfolio's projects.ts, so
- * facts stay in one place; this file only chooses the real screenshots each exhibit shows and
+ * collections.ts). Names, years, credits and links come from the portfolio's projects.ts
+ * (Gallery-only projects included), so facts stay in one place; this file only chooses the real screenshots each exhibit shows and
  * a few headline technologies. Every image is an original file in /public/image/projects/,
  * never edited. Left out on purpose: screens showing a third party's email address, and the
  * evidence view that is mostly game footage.
@@ -47,7 +47,7 @@ const exhibit = (
   screens: GalleryShot[],
   stack: string[],
 ): GalleryProject => {
-  const project = getProject(slug);
+  const project = getAnyProject(slug);
   if (!project) throw new Error(`No project "${slug}" for the Gallery`);
   return { slug, project, cover, focus, screens, stack, links: project.links };
 };
@@ -55,6 +55,7 @@ const exhibit = (
 const AS = 'academic-sentinel';
 const PM = 'prematch-tracker';
 const SS = 'spendsync';
+const QZ = 'quizer';
 
 export const exhibits: GalleryProject[] = [
   exhibit(
@@ -105,6 +106,28 @@ export const exhibits: GalleryProject[] = [
         'SpendSync overview with demo data: income, spending and remaining balance totals above forms to log an expense and a deposit.'),
     ],
     ['JavaScript (ES modules)', 'Chart.js', 'SheetJS', 'Google Drive API'],
+  ),
+  // Captured with a fictional demo account and data.
+  exhibit(
+    QZ,
+    shot(QZ, 'quizer-progress-dashboard.png', 2880, 3248,
+      'Quizer progress page for a demo account: questions studied, questions needing attention, mastered and due-for-review totals, a list of study modes to continue, a 14-day activity chart, per-set numbers and practice test scores.'),
+    { x: 0.5, y: 0.22 },
+    [
+      shot(QZ, 'quizer-dashboard-study-modes.png', 2880, 1800,
+        'Quizer dashboard with its study modes: smart review, learn, active recall, matching, code challenge, flashcards, practice test and mistake review, each with a short description and the active set’s progress.'),
+      shot(QZ, 'quizer-import-question-set.png', 2880, 1800,
+        'Quizer Import a question set page: a choice of AI prompt question types, a button to copy the prompt, a set title, and a pasted array of networking questions ready to save.'),
+      shot(QZ, 'quizer-practice-test-in-progress.png', 2880, 1800,
+        'Quizer practice test in progress on a web development set: question 4 of 10 with four choices and one selected, a countdown timer, and a question navigator with Submit test and Save and exit buttons.'),
+      shot(QZ, 'quizer-code-challenge.png', 2880, 1800,
+        'Quizer code challenge asking what a short C# loop prints, with the code shown highlighted, four answer choices, and the correct answer marked with its explanation.'),
+      shot(QZ, 'quizer-mobile-flashcards.png', 1170, 2532,
+        'Quizer flashcards on a phone: a web development set of 15 cards with shuffle, restart and read-aloud controls, Know and Still learning counts, and a card showing its answer.'),
+      shot(QZ, 'quizer-practice-test-results.png', 2880, 1800,
+        'Quizer practice test result: passed with 80%, 8 of 10 correct against a 70% pass mark, totals for correct, incorrect and unanswered questions and time spent, and a review of each question with its correct answer.'),
+    ],
+    ['Python', 'Flask', 'PostgreSQL', 'JavaScript'],
   ),
 ];
 

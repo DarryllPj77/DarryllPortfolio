@@ -9,7 +9,8 @@ import { companionLines } from '../data/companion';
 import { galleryLink, mobileNav, primaryNav, sections } from '../data/navigation';
 import { GalleryApp } from '../gallery/GalleryApp';
 import { collections, exhibitsIn } from '../gallery/collections';
-import { exhibits } from '../gallery/data';
+import { exhibits, getExhibit } from '../gallery/data';
+import { projects } from '../data/projects';
 import { INTRO_SEEN_KEY } from '../intro/introContext';
 
 const root = process.cwd();
@@ -31,8 +32,15 @@ function imageSize(bytes: Buffer) {
 describe('gallery exhibits', () => {
   const shots = exhibits.flatMap((g) => [g.cover, ...g.screens]);
 
-  it('are the three projects, Academic Sentinel first', () => {
-    expect(exhibits.map((g) => g.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync']);
+  it('are the three best projects, Academic Sentinel first, then Quizer', () => {
+    expect(exhibits.map((g) => g.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync', 'quizer']);
+  });
+
+  it('keeps Quizer in the Gallery only, out of the portfolio’s own project list', () => {
+    expect(projects.map((p) => p.slug)).not.toContain('quizer');
+    expect(getExhibit('quizer').project.name).toBe('Quizer');
+    expect(getExhibit('quizer').cover.src).toBe('/image/projects/quizer/quizer-progress-dashboard.png');
+    expect(getExhibit('quizer').screens).toHaveLength(6);
   });
 
   it('use only real screenshot files, at their stored size, each once', () => {
@@ -97,10 +105,12 @@ describe('gallery as a separate page', () => {
 });
 
 describe('gallery collections', () => {
-  it('show one collection for now, the three best projects in order', () => {
-    expect(collections.map((c) => c.id)).toEqual(['3-best-projects']);
+  it('show the three best projects, then the learning and academic tools, each in order', () => {
+    expect(collections.map((c) => c.id)).toEqual(['3-best-projects', 'learning-academic-tools']);
     expect(exhibitsIn(collections[0]).map((e) => e.slug)).toEqual(['academic-sentinel', 'prematch-tracker', 'spendsync']);
-    expect(collections[0].presentation).toBe('hex-carousel');
+    expect(collections[1].name).toBe('Learning & Academic Tools');
+    expect(exhibitsIn(collections[1]).map((e) => e.slug)).toEqual(['quizer', 'academic-sentinel']);
+    for (const c of collections) expect(c.presentation).toBe('hex-carousel');
   });
 
   it('only list projects that have an exhibit, each once', () => {
@@ -114,17 +124,26 @@ describe('gallery collections', () => {
 describe('gallery page without WebGL', () => {
   it('shows each collection, then each project with its number, name and links, and a way back to the portfolio', () => {
     render(<GalleryApp />);
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['My 3 Best Projects']);
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'My 3 Best Projects',
+      'Learning & Academic Tools',
+    ]);
     expect(screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent)).toEqual([
       'Academic Sentinel',
       'PreMatch Tracker',
       'SpendSync',
+      'Quizer',
+      'Academic Sentinel',
     ]);
-    for (const [i, g] of exhibitsIn(collections[0]).entries()) {
-      const item = screen.getByRole('heading', { level: 3, name: g.project.name }).closest('li')!;
-      expect(within(item).getByText(`0${i + 1} / 03`)).toBeInTheDocument();
-      expect(within(item).getByRole('img', { name: g.cover.alt })).toHaveAttribute('src', g.cover.src);
-      expect(within(item).getAllByRole('link')).toHaveLength(g.links.length);
+    for (const c of collections) {
+      const section = screen.getByRole('region', { name: c.name });
+      const works = exhibitsIn(c);
+      for (const [i, g] of works.entries()) {
+        const item = within(section).getByRole('heading', { level: 3, name: g.project.name }).closest('li')!;
+        expect(within(item).getByText(`0${i + 1} / 0${works.length}`)).toBeInTheDocument();
+        expect(within(item).getByRole('img', { name: g.cover.alt })).toHaveAttribute('src', g.cover.src);
+        expect(within(item).getAllByRole('link')).toHaveLength(g.links.length);
+      }
     }
     expect(screen.getByRole('link', { name: /darryllportfolio/i })).toHaveAttribute('href', '/');
     // No portfolio shell here.

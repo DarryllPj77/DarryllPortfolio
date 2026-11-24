@@ -190,27 +190,32 @@ describe('the lobby and the way between levels', () => {
   const atLobby = () => window.history.replaceState(null, '', '/gallery');
   const bar = () => screen.getByRole('navigation', { name: 'Gallery' });
 
-  it('opens on the lobby, showing only the collection that exists', async () => {
+  it('opens on the lobby, on the first of the collections that exist', async () => {
     atLobby();
     render(<GalleryApp />);
-    expect(screen.getByText('One collection on view')).toBeInTheDocument();
+    expect(screen.getByText('2 collections on view')).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual(['My 3 Best Projects']);
     expect(screen.getByText(/3 works/)).toHaveTextContent('Academic Sentinel, PreMatch Tracker, SpendSync');
     expect(screen.queryByTestId('scene')).not.toBeInTheDocument(); // no 3D until a collection is entered
     expect(within(bar()).getByText('After Hours')).toHaveAttribute('aria-current', 'page');
   });
 
-  it('turns the orbit through the reserved places too, which have nothing to enter yet', async () => {
+  it('turns the orbit to the next collection, then the reserved places, which have nothing to enter yet', async () => {
     const user = userEvent.setup();
     atLobby();
     render(<GalleryApp />);
     const name = () => screen.getByRole('heading', { level: 2 }).textContent;
     await user.click(screen.getByRole('button', { name: 'Next collection' }));
+    expect(name()).toBe('Learning & Academic Tools');
+    expect(screen.getByText(/2 works/)).toHaveTextContent('Quizer, Academic Sentinel');
+    expect(screen.getByRole('button', { name: /enter learning & academic tools/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next collection' }));
     expect(name()).toBe('Coming soon');
-    expect(screen.getByText('Collection 02')).toBeInTheDocument();
+    expect(screen.getByText('Collection 03')).toBeInTheDocument();
     expect(screen.getByText('Not open yet')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^enter/i })).not.toBeInTheDocument();
     // Back the other way, and round the whole orbit with the arrow keys.
+    await user.click(screen.getByRole('button', { name: 'Previous collection' }));
     await user.click(screen.getByRole('button', { name: 'Previous collection' }));
     expect(name()).toBe('My 3 Best Projects');
     await user.keyboard('{ArrowLeft}');
@@ -230,7 +235,7 @@ describe('the lobby and the way between levels', () => {
     expect(window.location.hash).toBe('#/3-best-projects');
     expect(within(bar()).getByText('My 3 Best Projects')).toHaveAttribute('aria-current', 'page');
     await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
-    await screen.findByText('One collection on view');
+    await screen.findByText('2 collections on view');
     expect(window.location.hash).toBe('');
   });
 
@@ -239,7 +244,7 @@ describe('the lobby and the way between levels', () => {
     render(<GalleryApp />); // starts in the collection (see beforeEach)
     await screen.findByRole('navigation', { name: 'Exhibition' });
     await user.keyboard('{Escape}');
-    await screen.findByText('One collection on view');
+    await screen.findByText('2 collections on view');
     expect(window.location.hash).toBe('#/');
   });
 
@@ -252,10 +257,23 @@ describe('the lobby and the way between levels', () => {
     await user.keyboard('{ArrowRight}');
     await waitFor(() => expect(placardName()).toBe('PreMatch Tracker'));
     await user.click(within(bar()).getByRole('button', { name: /after hours/i }));
-    await screen.findByText('One collection on view');
+    await screen.findByText('2 collections on view');
     await user.click(screen.getByRole('button', { name: /enter my 3 best projects/i }));
     await screen.findByRole('navigation', { name: 'Exhibition' });
     expect(placardName()).toBe('PreMatch Tracker');
+  });
+
+  it('enters the Learning & Academic Tools collection, Quizer in front', async () => {
+    const user = userEvent.setup();
+    atLobby();
+    render(<GalleryApp />);
+    await user.click(screen.getByRole('button', { name: 'Next collection' }));
+    await user.click(screen.getByRole('button', { name: /enter learning & academic tools/i }));
+    await screen.findByRole('navigation', { name: 'Exhibition' });
+    expect(window.location.hash).toBe('#/learning-academic-tools');
+    expect(placardName()).toBe('Quizer');
+    await user.keyboard('{ArrowRight}');
+    await waitFor(() => expect(placardName()).toBe('Academic Sentinel'));
   });
 
   it('takes links from the earlier Gallery to the same project in the collection', async () => {

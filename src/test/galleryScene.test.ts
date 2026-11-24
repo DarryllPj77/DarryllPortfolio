@@ -118,6 +118,23 @@ describe('the hexagon carousel', () => {
     for (const i of [1, 2]) expect(front.z - placeOnWheel(i, 0, 0, N).z).toBeGreaterThan(WHEEL_DEPTH);
   });
 
+  it('with two projects, rests the other one to the right (not hidden behind), and turns without a jump', () => {
+    const resting = placeOnWheel(1, 0, 0, 2);
+    expect(resting.x).toBeGreaterThan(1);
+    close(placeOnWheel(0, 0, 1, 2).x, 0);
+    // Turning to the other project: it comes in from the right, the front one swings away left.
+    const TURN2 = Math.PI;
+    let last = [placeOnWheel(0, 0, 1, 2), placeOnWheel(1, 0, 1, 2)];
+    for (let k = 1; k <= 200; k++) {
+      const a = (-TURN2 * k) / 200;
+      const now = [placeOnWheel(0, a, 1, 2), placeOnWheel(1, a, 1, 2)];
+      for (const i of [0, 1]) expect(Math.hypot(now[i].x - last[i].x, now[i].z - last[i].z), `step ${k}`).toBeLessThan(0.3);
+      last = now;
+    }
+    close(last[1].x, 0); // the other project is in front
+    expect(last[0].x).toBeGreaterThan(1); // and the first rests on the right
+  });
+
   it('holds exactly the projects it is given, spaced evenly: no copies to fill it out', () => {
     for (const count of [3, 4, 5]) {
       const angles = Array.from({ length: count }, (_, i) => placeOnWheel(i, 0, 1, count).angle);

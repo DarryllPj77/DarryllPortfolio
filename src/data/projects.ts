@@ -176,8 +176,52 @@ export const projects: Project[] = [
   },
 ];
 
+/**
+ * Projects shown only in the Gallery (/gallery), not in the portfolio's Projects section,
+ * Explorer or case-study pages. Their facts live here all the same, next to the others.
+ */
+export const galleryOnlyProjects: Project[] = [
+  {
+    slug: 'quizer',
+    name: 'Quizer',
+    fileName: 'quizer.py',
+    period: '2026',
+    category: 'Learning & Academic Tools',
+    tagline: 'All-Purpose Exam Questioners: a study platform for practising exam questions.',
+    summary:
+      'A web-based study platform featuring AI-assisted question generation, multiple interactive study modes, practice tests, and personalized learning progress tracking.',
+    featured: false,
+    stack: ['Python', 'Flask', 'PostgreSQL', 'HTML', 'CSS', 'JavaScript'],
+    contributions: [
+      'Original project concept',
+      'Feature planning and requirements',
+      'Application workflows',
+      'Overall development direction',
+      'Guiding AI coding tools through the implementation',
+      'Reviewing, testing and feedback throughout development',
+    ],
+    credit: {
+      kind: 'ai-assisted',
+      label: 'AI-assisted implementation',
+      note: 'Quizer was my original concept. I was responsible for the idea, feature planning, requirements, application workflows and overall direction. AI coding tools handled most of the implementation under my guidance, and I reviewed, tested and gave feedback on the application throughout development.',
+    },
+    links: [
+      {
+        kind: 'repo',
+        label: 'Source on GitHub',
+        href: 'https://github.com/DarryllPj77/All-Purpose-Exam-Questioners',
+      },
+    ],
+  },
+];
+
 export function getProject(slug: string | undefined): Project | undefined {
   return projects.find((p) => p.slug === slug);
+}
+
+/** Any project, the portfolio's or a Gallery-only one: for the Gallery's exhibits. */
+export function getAnyProject(slug: string): Project | undefined {
+  return getProject(slug) ?? galleryOnlyProjects.find((p) => p.slug === slug);
 }
 
 export const featuredProject: Project = projects.find((p) => p.featured) ?? projects[0];

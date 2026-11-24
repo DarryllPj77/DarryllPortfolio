@@ -41,6 +41,13 @@ export const collections: GalleryCollection[] = [
     projectIds: ['academic-sentinel', 'prematch-tracker', 'spendsync'],
     presentation: 'hex-carousel',
   },
+  {
+    id: 'learning-academic-tools',
+    name: 'Learning & Academic Tools',
+    theme: { accent: '#38bdf8', light: '#eef8ff' },
+    projectIds: ['quizer', 'academic-sentinel'],
+    presentation: 'hex-carousel',
+  },
 ];
 
 export function getCollection(id: string): GalleryCollection | undefined {
