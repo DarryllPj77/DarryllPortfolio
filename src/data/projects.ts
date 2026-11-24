@@ -207,6 +207,11 @@ export const galleryOnlyProjects: Project[] = [
     },
     links: [
       {
+        kind: 'live',
+        label: 'Live site',
+        href: 'https://all-purpose-exam-questioners.onrender.com/dashboard',
+      },
+      {
         kind: 'repo',
         label: 'Source on GitHub',
         href: 'https://github.com/DarryllPj77/All-Purpose-Exam-Questioners',
