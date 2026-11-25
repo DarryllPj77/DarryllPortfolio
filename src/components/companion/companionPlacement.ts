@@ -33,6 +33,11 @@ export interface RectLike {
 /** Space between the companion and what it stands next to. */
 export const GAP = 12;
 
+/** Whether a box (the avatar's) can be seen at all in a viewport of `view`: some of it is on screen. */
+export function isOnScreen(r: RectLike, view: Size): boolean {
+  return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < view.h && r.right > 0 && r.left < view.w;
+}
+
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 /** Keeps a box of `size` with its top-left at (x, y) fully inside the bounds. */

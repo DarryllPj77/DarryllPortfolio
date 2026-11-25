@@ -57,6 +57,7 @@ import {
   besideTarget,
   clampToBounds,
   homeBase,
+  isOnScreen,
   liftInPlace,
   stepSwing,
   travelSeconds,
@@ -854,28 +855,26 @@ export function CompanionProvider({ children }: { children: ReactNode }) {
   /* ------------------------------------------------------------ clicks, roam */
 
   /**
-   * Darryll says the line for a page or file. The same for every device and every way of
-   * getting there: beside him when he is on screen at his small size, otherwise (in the
-   * hero, so the hero text stays clear; on another page; mid-trip; no 3D) as a caption at
-   * the bottom of the screen. The same line is never shown twice in a row.
+   * Darryll says the line for a page or file, but only while the 3D avatar is on screen to say
+   * it: beside him when he is out at his small size, or as a caption at the bottom of the
+   * screen while he stands in the hero (so the hero text stays clear) or is mid-trip. With no
+   * avatar in view (hidden on this page, scrolled away, not introduced yet, or no 3D at all)
+   * there is no line: words with nobody saying them only get in the way. The same line is
+   * never shown twice in a row.
    */
   const say = (key: string, avoid: RectLike | null = null) => {
     if (carry.current || intro.active) return;
     const line = getCompanionLine(key);
     if (!line || showingKey.current === key) return;
     const r = box.current?.getBoundingClientRect();
-    const beside =
+    const onScreen =
       live &&
       introReady &&
-      !busy.current &&
-      (locationRef.current.kind !== 'hero' || holder.parentElement === layer) &&
       holder.isConnected &&
       r !== undefined &&
-      r.width > 0 &&
-      r.bottom > 0 &&
-      r.top < window.innerHeight &&
-      r.right > 0 &&
-      r.left < window.innerWidth;
+      isOnScreen(r, { w: window.innerWidth, h: window.innerHeight });
+    if (!onScreen) return;
+    const beside = !busy.current && (locationRef.current.kind !== 'hero' || holder.parentElement === layer);
     if (beside) startActivity('talking');
     bubbleId.current += 1;
     showingKey.current = key;

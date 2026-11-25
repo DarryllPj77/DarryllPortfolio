@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -15,65 +15,44 @@ function renderAt(path = '/') {
   );
 }
 
-const aboutLine = companionLines['/about'].text;
-/** The line as shown on screen (the bubble or caption), not the screen-reader live region. */
-const shownLine = () =>
-  document.querySelector<HTMLElement>('[data-companion-bubble]')?.textContent ?? null;
+/** The line as shown on screen (the bubble or caption). */
+const shownLine = () => document.querySelector<HTMLElement>('[data-companion-bubble]')?.textContent ?? null;
+/** Waits past the moment a page's line would appear after a page change. */
+const pastTheLine = () => new Promise((r) => setTimeout(r, 700));
 
-describe("Darryll's section information", () => {
-  it('appears on a phone when a section is tapped in the phone menu (no hover, no Explorer)', async () => {
-    window.innerWidth = 375;
-    const user = userEvent.setup();
-    renderAt('/');
-    expect(shownLine()).toBeNull(); // nothing on the first load
-
-    await user.click(screen.getByRole('button', { name: 'Open menu' }));
-    const menu = screen.getByRole('navigation', { name: 'Main' });
-    await user.click(within(menu).getByRole('link', { name: /about/i }));
-
-    await waitFor(() => expect(shownLine()).toContain(aboutLine), { timeout: 2000 });
-    expect(shownLine()).toContain('Darryll.md');
-    // Screen readers get it too, through the live region.
-    expect(screen.getByText(`Darryll.md: ${aboutLine}`)).toBeInTheDocument();
-  });
-
-  it('shows the same line on desktop from the top navigation: one shared section state', async () => {
-    window.innerWidth = 1280;
-    const user = userEvent.setup();
-    renderAt('/');
-    const nav = screen.getByRole('navigation', { name: 'Main' });
-    await user.click(within(nav).getByRole('link', { name: 'About' }));
-    await waitFor(() => expect(shownLine()).toContain(aboutLine), { timeout: 2000 });
-  });
-
-  it('explains a hero button when it is clicked on desktop (GitHub, the resume)', async () => {
-    window.innerWidth = 1280;
-    const user = userEvent.setup();
-    renderAt('/');
-    const profiles = screen.getByRole('list', { name: 'Profiles' });
-    await user.click(within(profiles).getByRole('link', { name: /github/i }));
-    await waitFor(() => expect(shownLine()).toContain(companionLines['action:github'].text));
-    expect(companionLines['action:github'].text).toMatch(/Academic Sentinel, PreMatch Tracker and SpendSync/);
-
-    await user.click(screen.getAllByRole('button', { name: /view resume/i })[0]);
-    await waitFor(() => expect(shownLine()).toContain(companionLines['action:resume'].text));
-  });
-
-  it('closes with a tap anywhere else, and with its own close control', async () => {
+/*
+ * Darryll's lines are said by the 3D avatar, so they only appear while it is on screen to
+ * say them (see CompanionProvider's `say`). Here there is no WebGL, so no avatar: no line,
+ * on any device, however the visitor navigates or whatever they click.
+ */
+describe("Darryll's section information without the avatar", () => {
+  it('shows nothing on a phone when a section is tapped in the phone menu', async () => {
     window.innerWidth = 375;
     const user = userEvent.setup();
     renderAt('/');
     await user.click(screen.getByRole('button', { name: 'Open menu' }));
     await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: /about/i }));
-    await waitFor(() => expect(shownLine()).not.toBeNull(), { timeout: 2000 });
+    await pastTheLine();
+    expect(shownLine()).toBeNull();
+    // Not even for screen readers: the page itself already says where they are.
+    expect(screen.queryByText(`Darryll.md: ${companionLines['/about'].text}`)).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('heading', { level: 1, name: 'About' }));
-    await waitFor(() => expect(shownLine()).toBeNull());
+  it('shows nothing on desktop from the top navigation', async () => {
+    window.innerWidth = 1280;
+    const user = userEvent.setup();
+    renderAt('/');
+    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: 'About' }));
+    await pastTheLine();
+    expect(shownLine()).toBeNull();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Open menu' }));
-    await user.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('link', { name: /skills/i }));
-    await waitFor(() => expect(shownLine()).not.toBeNull(), { timeout: 2000 });
-    await user.click(document.querySelector<HTMLElement>('[data-companion-bubble] button')!);
-    await waitFor(() => expect(shownLine()).toBeNull());
+  it('shows nothing when a hero button is clicked', async () => {
+    window.innerWidth = 1280;
+    const user = userEvent.setup();
+    renderAt('/');
+    await user.click(within(screen.getByRole('list', { name: 'Profiles' })).getByRole('link', { name: /github/i }));
+    await pastTheLine();
+    expect(shownLine()).toBeNull();
   });
 });

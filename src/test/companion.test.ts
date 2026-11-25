@@ -11,6 +11,7 @@ import {
   atPoint,
   besideTarget,
   homeBase,
+  isOnScreen,
   liftInPlace,
   placeBubble,
   stepSwing,
@@ -31,6 +32,17 @@ const rect = (left: number, top: number, width: number, height: number) => ({
   height,
   right: left + width,
   bottom: top + height,
+});
+
+describe('when the avatar can speak', () => {
+  const view = { w: 1280, h: 800 };
+  it('only while some of the avatar is on screen', () => {
+    expect(isOnScreen(rect(1100, 600, 116, 145), view)).toBe(true); // out, bottom right
+    expect(isOnScreen(rect(800, -100, 400, 500), view)).toBe(true); // hero, partly scrolled away
+    expect(isOnScreen(rect(800, -600, 400, 500), view)).toBe(false); // hero, scrolled out of view
+    expect(isOnScreen(rect(100, 900, 116, 145), view)).toBe(false); // below the fold
+    expect(isOnScreen(rect(0, 0, 0, 0), view)).toBe(false); // not laid out (hidden)
+  });
 });
 
 describe('companion placement', () => {
